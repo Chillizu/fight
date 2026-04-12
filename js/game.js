@@ -1,36 +1,36 @@
 /**
- * Game main logic
- * Core game loop, combat system, game state management
+ * 【游戏主逻辑】
+ * 核心游戏循环、战斗系统、游戏状态管理
  */
 
-// === Global game state ===
-let gameState = "PLAYING";
-let gameTimer = GAME_DURATION;
-let lastTime = Date.now();
-let isGameOver = false;
+// === 全局游戏状态 ===
+let gameState = "PLAYING"; // 游戏状态：PLAYING | QUESTION | GAMEOVER
+let gameTimer = GAME_DURATION; // 游戏计时器
+let lastTime = Date.now(); // 用于计时
+let isGameOver = false; // 游戏是否结束
 
-// === Global effect state ===
-let hitStopFrames = 0;
-let screenShakeTime = 0;
+// === 全局效果状态 ===
+let hitStopFrames = 0; // Hit Stop顿帧计数
+let screenShakeTime = 0; // 屏幕震动计数
 
-// === Question system state ===
-let qCaster = null;
-let qTarget = null;
-let qTimer = 0;
+// === 答题系统状态 ===
+let qCaster = null; // 释放技能的玩家
+let qTarget = null; // 目标玩家
+let qTimer = 0; // 答题计时器
 
-// === Player objects ===
+// === 玩家对象（将在初始化中创建） ===
 let player1 = null;
 let player2 = null;
 
-// === Canvas and context ===
+// === Canvas及上下文 ===
 let canvas = null;
 let ctx = null;
 
-// === Key state ===
+// === 按键状态 ===
 const keys = {};
 
 /**
- * Rectangle collision detection
+ * 矩形碰撞检测
  */
 function rectIntersect(r1, r2) {
   return !(
@@ -55,7 +55,10 @@ function checkCombat() {
       h: player2.height,
     };
     if (rectIntersect(p1Hit, p2Body)) {
-      let dmg = BASE_ATTACK_DAMAGE + (player1.buffs.berserk > 0 ? 8 : 0) - (player1.buffs.silence > 0 ? 5 : 0);
+      let dmg =
+        BASE_ATTACK_DAMAGE +
+        (player1.buffs.berserk > 0 ? 8 : 0) -
+        (player1.buffs.silence > 0 ? 5 : 0);
       player2.hp -= dmg;
       player1.skillPoints++;
       hitStopFrames = HIT_STOP_FRAMES;
@@ -81,7 +84,10 @@ function checkCombat() {
       h: player1.height,
     };
     if (rectIntersect(p2Hit, p1Body)) {
-      let dmg = BASE_ATTACK_DAMAGE + (player2.buffs.berserk > 0 ? 8 : 0) - (player2.buffs.silence > 0 ? 5 : 0);
+      let dmg =
+        BASE_ATTACK_DAMAGE +
+        (player2.buffs.berserk > 0 ? 8 : 0) -
+        (player2.buffs.silence > 0 ? 5 : 0);
       player1.hp -= dmg;
       player2.skillPoints++;
       hitStopFrames = HIT_STOP_FRAMES;
@@ -189,8 +195,22 @@ function initializeGame() {
   canvas.focus();
 
   // Create players
-  player1 = new Player(P1_START_X, P1_START_Y, "#ff4e50", CONTROLS_P1, true, "math");
-  player2 = new Player(P2_START_X, P2_START_Y, "#4e50ff", CONTROLS_P2, false, "english");
+  player1 = new Player(
+    P1_START_X,
+    P1_START_Y,
+    "#ff4e50",
+    CONTROLS_P1,
+    true,
+    "math",
+  );
+  player2 = new Player(
+    P2_START_X,
+    P2_START_Y,
+    "#4e50ff",
+    CONTROLS_P2,
+    false,
+    "english",
+  );
 
   console.log("Game initialized!");
 }
@@ -223,7 +243,7 @@ function setupKeyboardInput() {
  */
 function createFloatingText(x, y, text, color) {
   if (!ctx) return;
-  
+
   ctx.save();
   ctx.fillStyle = color;
   ctx.font = "bold 24px Arial";
@@ -244,9 +264,8 @@ function setPlayerBuff(player, name, frames) {
   }
 }
 
-// Make functions globally available
+// Make handleAnswer globally available
 window.handleAnswer = handleAnswer;
-window.location = { reload: function() { location.reload(); } };
 
 /**
  * Page load
