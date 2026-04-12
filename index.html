@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园大乱斗 - 贴图引擎版 V0.7</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 游戏窗口 -->
+    <div id="game-wrapper">
+        <div id="game-container">
+            <!-- Canvas画布 -->
+            <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+            <!-- CRT屏幕扫描线效果 -->
+            <div id="crt-overlay"></div>
+
+            <!-- UI信息层 -->
+            <div id="ui-layer">
+                <!-- P1玩家信息 -->
+                <div class="player-info" id="p1-info">
+                    <div class="name-plate">
+                        <div class="avatar-box" id="p1-avatar-text">生</div>
+                        <div class="player-name" id="p1-name">P1 (生物)</div>
+                    </div>
+                    <div class="health-bar-wrapper">
+                        <div class="health-bar-fill" id="p1-health"></div>
+                    </div>
+                    <div class="skill-bar-wrapper">
+                        <div class="skill-bar-fill" id="p1-skill-fill"></div>
+                    </div>
+                    <div class="combo-text" id="p1-combo-text">HITS: 0 | SKILL: 0/13</div>
+                </div>
+
+                <!-- 中央计时器 -->
+                <div class="timer-container">
+                    <div id="timer">60</div>
+                    <div class="vs-text">VS</div>
+                </div>
+
+                <!-- P2玩家信息 -->
+                <div class="player-info" id="p2-info" style="text-align: right;">
+                    <div class="name-plate">
+                        <div class="avatar-box" id="p2-avatar-text">化</div>
+                        <div class="player-name" id="p2-name">P2 (化学)</div>
+                    </div>
+                    <div class="health-bar-wrapper">
+                        <div class="health-bar-fill" id="p2-health"></div>
+                    </div>
+                    <div class="skill-bar-wrapper">
+                        <div class="skill-bar-fill" id="p2-skill-fill"></div>
+                    </div>
+                    <div class="combo-text" id="p2-combo-text">HITS: 0 | SKILL: 0/13</div>
+                </div>
+            </div>
+
+            <!-- 答题框模态 -->
+            <div id="question-modal" class="modal">
+                <div id="q-title">🔥 技能蓄力中! <span id="q-caster-name">P1</span> 请答题 🔥</div>
+                <div id="q-text">DNA中与腺嘌呤(A)配对的是？</div>
+                <div class="q-options-grid">
+                    <div class="q-option">
+                        <span class="q-key" id="q-key-0">W</span>
+                        <span id="q-opt-0">胸腺嘧啶(T)</span>
+                    </div>
+                    <div class="q-option">
+                        <span class="q-key" id="q-key-1">S</span>
+                        <span id="q-opt-1">胞嘧啶(C)</span>
+                    </div>
+                    <div class="q-option">
+                        <span class="q-key" id="q-key-2">A</span>
+                        <span id="q-opt-2">鸟嘌呤(G)</span>
+                    </div>
+                    <div class="q-option">
+                        <span class="q-key" id="q-key-3">D</span>
+                        <span id="q-opt-3">尿嘧啶(U)</span>
+                    </div>
+                </div>
+                <div id="q-timer-bar">
+                    <div id="q-timer-fill"></div>
+                </div>
+            </div>
+
+            <!-- AI贴图规范说明模态 -->
+            <div id="spec-modal" class="modal">
+                <h2 style="color: #00f2fe; margin-top: 0;">🖼️ AI 序列帧贴图规范</h2>
+                <div style="font-size: 16px; line-height: 1.6; color: #ddd;">
+                    <p>为了让 AI 生成的人物能完美实现动作，请按 <strong>4列 x 3行</strong> 的标准生成透明底图 (Sprite Sheet)。</p>
+                    <ul style="text-align: left;">
+                        <li><strong>第 1 行 (Row 0):</strong> 待机/呼吸动画 (4帧)</li>
+                        <li><strong>第 2 行 (Row 1):</strong> 跑动/前移滑动 (4帧)</li>
+                        <li><strong>第 3 行 (Row 2):</strong> 攻击/出拳动作 (4帧)</li>
+                    </ul>
+                    <p style="color: #ffea00; font-size: 14px;">引擎会自动计算图片宽高，将整张图均分为 12 个小格子进行动画播放。如果未按规范上传，引擎将降级为"火柴人"。</p>
+                </div>
+                <button class="close-btn" onclick="document.getElementById('spec-modal').style.display='none'; document.getElementById('gameCanvas').focus();">明白，返回游戏</button>
+            </div>
+
+            <!-- 游戏结束屏幕 -->
+            <div id="game-over">
+                <div id="winner-text">K.O.</div>
+                <div style="font-size: 20px; color: #fff; margin-top: 15px;">按 F5 重新开始</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部控制面板 -->
+    <div class="bottom-panel">
+        <div class="controls-info">
+            P1: <span>WASD</span> 移 <span>J</span> 攻 <span>K</span> 技 &nbsp;|&nbsp; P2: <span>↑↓←→</span> 移 <span>1</span> 攻 <span>2</span> 技
+        </div>
+        <div class="asset-loader">
+            <button class="upload-btn spec-btn" onclick="document.getElementById('spec-modal').style.display='flex'">查看AI贴图规范</button>
+            <button class="upload-btn" style="background: #9c27b0; border-color: #7b1fa2;" onclick="toggleAIGenerationPanel()">📸 AI生成角色</button>
+            <label class="upload-btn">
+                加载P1雪碧图 <input type="file" accept="image/*" onchange="loadCustomAsset(event, 'p1')">
+            </label>
+            <label class="upload-btn" style="background: #ff4e50; border-color: #d31010;">
+                加载P2雪碧图 <input type="file" accept="image/*" onchange="loadCustomAsset(event, 'p2')">
+            </label>
+        </div>
+    </div>
+
+    <!-- ========== 脚本加载顺序很重要 ========== -->
+    <!-- 1. 配置和常量 -->
+    <script src="js/config.js"></script>
+
+    <!-- 2. 依赖：学科数据、粒子系统、UI函数 -->
+    <script src="js/subjects.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/ui_extend.js"></script>
+
+    <!-- 3. 游戏对象：玩家类 -->
+    <script src="js/player.js"></script>
+
+    <!-- 4. 主游戏逻辑 -->
+    <script src="js/game.js"></script>
+</body>
+</html>
