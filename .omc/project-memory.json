@@ -1,0 +1,167 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1776086192317,
+  "projectRoot": "D:\\Code\\Web\\Fight_",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": ">=12.0.0",
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "npm",
+    "runtime": "Node.js 12.0.0"
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": "npm run start",
+    "scripts": {
+      "start": "init.bat",
+      "server:python": "python -m http.server 8000",
+      "server:node": "npx http-server -p 8080 -c-1",
+      "verify": "cd tools && python verify_system.py",
+      "process:sprites": "cd tools && python sprite_processor.py batch ../assets/sprites/",
+      "test:gen": "cd tools && python gen_test_image.py"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "assets",
+      "docs"
+    ],
+    "gitBranches": {
+      "defaultBranch": "master",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 0,
+      "lastAccessed": 1776086192206,
+      "keyFiles": []
+    },
+    "css": {
+      "path": "css",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1776086192238,
+      "keyFiles": [
+        "style.css"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 2,
+      "lastAccessed": 1776086192240,
+      "keyFiles": [
+        "PROJECT_STRUCTURE.md",
+        "SPRITE_GENERATION_PROMPT.md"
+      ]
+    },
+    "js": {
+      "path": "js",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1776086192242,
+      "keyFiles": [
+        "config.js",
+        "game.js",
+        "particles.js",
+        "player.js",
+        "subjects.js"
+      ]
+    },
+    "openspec": {
+      "path": "openspec",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1776086192244,
+      "keyFiles": [
+        "config.yaml"
+      ]
+    },
+    "tools": {
+      "path": "tools",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1776086192245,
+      "keyFiles": [
+        "sprite_processor.py",
+        "verify_system.py"
+      ]
+    },
+    "assets\\data": {
+      "path": "assets\\data",
+      "purpose": "Data files",
+      "fileCount": 1,
+      "lastAccessed": 1776086192247,
+      "keyFiles": [
+        "questions.json"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "openspec\\changes\\visual-gameplay-overhaul\\proposal.md",
+      "accessCount": 1,
+      "lastAccessed": 1776086319223,
+      "type": "file"
+    },
+    {
+      "path": "openspec\\changes\\visual-gameplay-overhaul\\design.md",
+      "accessCount": 1,
+      "lastAccessed": 1776086369642,
+      "type": "file"
+    },
+    {
+      "path": "openspec\\changes\\visual-gameplay-overhaul\\specs\\arcade-visual-style\\spec.md",
+      "accessCount": 1,
+      "lastAccessed": 1776086422629,
+      "type": "file"
+    },
+    {
+      "path": "openspec\\changes\\visual-gameplay-overhaul\\specs\\reliable-quiz-input\\spec.md",
+      "accessCount": 1,
+      "lastAccessed": 1776086424069,
+      "type": "file"
+    },
+    {
+      "path": "openspec\\changes\\visual-gameplay-overhaul\\specs\\combat-hitbox\\spec.md",
+      "accessCount": 1,
+      "lastAccessed": 1776086449430,
+      "type": "file"
+    },
+    {
+      "path": "openspec\\changes\\visual-gameplay-overhaul\\specs\\block-mechanic\\spec.md",
+      "accessCount": 1,
+      "lastAccessed": 1776086450757,
+      "type": "file"
+    },
+    {
+      "path": "openspec\\changes\\visual-gameplay-overhaul\\tasks.md",
+      "accessCount": 1,
+      "lastAccessed": 1776086493404,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
