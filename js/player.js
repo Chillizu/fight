@@ -387,8 +387,11 @@ class Player {
     // Instead, we center it and preserve a reasonable aspect ratio.
 
     // Fit the cropped source rect into the player's box.
-    // Using a consistent "fit" scale + bottom alignment reduces jitter when crops vary.
-    const scale = Math.min(this.width / frame.sw, this.height / frame.sh);
+    // Use canonical scaling for stability across states if available
+    const cw = this.spriteMeta?.canonicalW || frame.sw;
+    const ch = this.spriteMeta?.canonicalH || frame.sh;
+    const scale = Math.min(this.width / cw, this.height / ch);
+
     const drawWidth = frame.sw * scale;
     const drawHeight = frame.sh * scale;
 

@@ -29,8 +29,8 @@ const BASE_ATTACK_DAMAGE = 25;
 const DAMAGE_VARIANCE = 5;
 
 // === 特效常量 ===
-const HIT_STOP_FRAMES = 4;
-const SCREEN_SHAKE_FRAMES = 5;
+const HIT_STOP_FRAMES = 6;
+const SCREEN_SHAKE_FRAMES = 8;
 const SKILL_COOLDOWN_FRAMES = 300;
 const POISON_DAMAGE = 22;
 const POISON_INTERVAL = 60;
@@ -95,8 +95,8 @@ const SPRITE_ANIM_ROWS = {
 // === 默认资源（可选；为空则不会请求，避免 404）===
 // 默认背景：硬加载根目录的 background.png（存在则自动显示）
 const DEFAULT_BG_SRC = "background.png";
-const DEFAULT_SPRITE_P1_SRC = "";
-const DEFAULT_SPRITE_P2_SRC = "";
+const DEFAULT_SPRITE_P1_SRC = "Gemini_Generated_Image_acm0h6acm0h6acm0.png";
+const DEFAULT_SPRITE_P2_SRC = "Gemini_Generated_Image_acm0h6acm0h6acm0.png";
 
 // === 智谱 AI (BigModel) 配置 ===
 const BIGMODEL_CONFIG = {

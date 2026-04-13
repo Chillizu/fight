@@ -41,13 +41,13 @@ function analyzeSpriteSheet(img, opts = {}) {
   const cellW = w / cols;
   const cellH = h / rows;
 
-  // First pass: scan each cell, capture raw content bounds and row-level union (in relative coords).
+  // First pass: scan each cell, capture raw content bounds and row-level stats (relative coords).
   const raw = [];
-  const rowBoxesRel = Array.from({ length: rows }, () => ({
-    left: Infinity,
-    right: -Infinity,
-    top: Infinity,
-    bottom: -Infinity,
+  const rowStats = Array.from({ length: rows }, () => ({
+    lefts: [],
+    rights: [],
+    tops: [],
+    bottoms: [],
     has: false,
   }));
 
@@ -86,31 +86,36 @@ function analyzeSpriteSheet(img, opts = {}) {
         bottom: (b.bottom - y0) / ch,
       };
 
-      const rb = rowBoxesRel[r];
-      rb.has = true;
-      if (rel.left < rb.left) rb.left = rel.left;
-      if (rel.right > rb.right) rb.right = rel.right;
-      if (rel.top < rb.top) rb.top = rel.top;
-      if (rel.bottom > rb.bottom) rb.bottom = rel.bottom;
+      const rs = rowStats[r];
+      rs.has = true;
+      rs.lefts.push(rel.left);
+      rs.rights.push(rel.right);
+      rs.tops.push(rel.top);
+      rs.bottoms.push(rel.bottom);
 
       raw.push({ row: r, col: c, x0, y0, x1, y1, cw, ch, empty: false, bounds: b, rel });
     }
   }
 
-  // Second pass: build normalized per-row crop boxes, then apply to each cell.
-  const rowBoxes = rowBoxesRel.map((rb) => {
-    if (!rb.has) {
+  // Robust per-row boxes via quantiles (avoid noisy outliers)
+  let rowBoxes = rowStats.map((rs) => {
+    if (!rs.has) {
       return { left: 0, top: 0, right: 1, bottom: 1, empty: true };
     }
 
-    // Clamp to [0,1] before padding.
-    const left = Math.max(0, Math.min(1, rb.left));
-    const right = Math.max(0, Math.min(1, rb.right));
-    const top = Math.max(0, Math.min(1, rb.top));
-    const bottom = Math.max(0, Math.min(1, rb.bottom));
+    const left = _quantile(rs.lefts, 0.1);
+    const right = _quantile(rs.rights, 0.9);
+    const top = _quantile(rs.tops, 0.1);
+    const bottom = _quantile(rs.bottoms, 0.9);
 
     return { left, right, top, bottom, empty: false };
   });
+
+  // Unify baseline (foot) across rows to prevent bouncing
+  const validBottoms = rowBoxes.filter((b) => !b.empty).map((b) => b.bottom);
+  const globalBottomRel = validBottoms.length > 0 ? Math.max(...validBottoms) : 1.0;
+
+  rowBoxes = rowBoxes.map((b) => (b.empty ? b : { ...b, bottom: globalBottomRel }));
 
   const frames = raw.map((rf) => {
     const rb = rowBoxes[rf.row];
@@ -135,7 +140,20 @@ function analyzeSpriteSheet(img, opts = {}) {
     };
   });
 
-  return { cols, rows, width: w, height: h, bgColor, frames };
+  // Global Canonical Size for scale stability
+  const canonicalW = Math.max(...frames.map((f) => f.sw));
+  const canonicalH = Math.max(...frames.map((f) => f.sh));
+
+  return { cols, rows, width: w, height: h, bgColor, frames, canonicalW, canonicalH, globalBottomRel };
+}
+
+function _quantile(arr, q) {
+  if (!arr || arr.length === 0) return 0;
+  const a = [...arr].sort((x, y) => x - y);
+  const pos = (a.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  return a[base + 1] !== undefined ? a[base] + rest * (a[base + 1] - a[base]) : a[base];
 }
 
 /** Get frame crop rect from spriteMeta and player state. */
