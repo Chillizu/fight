@@ -245,6 +245,7 @@ canvas {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.9); /* Darker overlay */
+  -webkit-backdrop-filter: blur(8px); /* Webkit support */
   backdrop-filter: blur(8px); /* Frosted glass effect */
   z-index: 1000;
   justify-content: center;
@@ -425,6 +426,8 @@ canvas {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   border: 2px solid #00f2fe;
   box-shadow: 0 0 30px rgba(0, 242, 254, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(5px); /* Webkit support */
+  backdrop-filter: blur(5px);
 }
 
 .subject-selector-container {

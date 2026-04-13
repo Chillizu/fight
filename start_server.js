@@ -56,24 +56,11 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log("\n");
-  console.log("========================================");
-  console.log("  校园大乱斗 - 本地服务器");
-  console.log("========================================");
-  console.log("");
-  console.log(`✓ 服务器已启动`);
-  console.log(`✓ 监听端口: ${PORT}`);
-  console.log("");
-  console.log("访问地址:");
-  console.log(`  主页:   http://localhost:${PORT}`);
-  console.log(`  游戏:   http://localhost:${PORT}/index.html`);
-  console.log("");
-  console.log("按 Ctrl+C 停止服务器");
-  console.log("");
+  console.log(`\n✓ 服务器运行在 http://localhost:${PORT}`);
+  console.log("按 Ctrl+C 停止\n");
 });
 
-// 优雅关闭
 process.on("SIGINT", () => {
-  console.log("\n\n服务器已停止");
+  console.log("\n\n已停止");
   process.exit(0);
 });

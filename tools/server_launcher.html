@@ -30,6 +30,7 @@
             border-radius: 12px;
             padding: 40px;
             box-shadow: 0 0 40px rgba(0, 242, 254, 0.3);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
         
@@ -212,7 +213,7 @@
                 <button class="method-button" onclick="startPythonServer()">▶ 启动Python服务器</button>
                 <p style="font-size: 12px; color: #999; margin-top: 10px;">
                     ℹ️ 需要已安装Python。如未安装，<br>
-                    请访问: <a href="https://www.python.org/downloads/" target="_blank" style="color: #00f2fe;">https://www.python.org</a>
+                    请访问: <a href="https://www.python.org/downloads/" target="_blank" rel="noopener" style="color: #00f2fe;">https://www.python.org</a>
                 </p>
             </div>
             
@@ -250,7 +251,7 @@
                 <button class="method-button" onclick="startNodeServer()">▶ 启动Node.js服务器</button>
                 <p style="font-size: 12px; color: #999; margin-top: 10px;">
                     ℹ️ 需要已安装Node.js。如未安装，<br>
-                    请访问: <a href="https://nodejs.org/" target="_blank" style="color: #00f2fe;">https://nodejs.org</a>
+                    请访问: <a href="https://nodejs.org/" target="_blank" rel="noopener" style="color: #00f2fe;">https://nodejs.org</a>
                 </p>
             </div>
         </div>
