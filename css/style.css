@@ -359,17 +359,22 @@ canvas {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 15px;
-  border: 2px solid #333;
+  gap: 15px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(20, 20, 30, 0.9));
+  padding: 20px;
+  border: 3px solid #00f2fe;
+  border-top: 3px solid #ff4e50;
   width: 800px;
+  box-shadow: 0 -5px 20px rgba(0, 242, 254, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .controls-info {
   font-size: 12px;
-  color: #aaa;
+  color: #00f2fe;
   text-align: center;
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .controls-info span {
@@ -379,36 +384,40 @@ canvas {
 
 .asset-loader {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
 }
 
 .upload-btn {
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
+  padding: 12px 24px;
+  background: rgba(0, 242, 254, 0.15);
+  border: 2px solid #00f2fe;
+  color: #00f2fe;
   cursor: pointer;
   font-weight: bold;
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
 }
 
 .upload-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  background: rgba(0, 242, 254, 0.3);
+  border-color: #00f2fe;
+  transform: translateY(-3px);
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.6);
+  text-shadow: 0 0 10px #00f2fe;
 }
 
 .upload-btn:active {
-  transform: translateY(0);
+  transform: translateY(-1px);
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
 }
 
 
@@ -417,8 +426,16 @@ canvas {
 }
 
 .upload-btn.spec-btn {
-  background: #1e90ff;
-  border-color: #00bfff;
+  background: rgba(30, 144, 255, 0.2);
+  border-color: #1e90ff;
+  color: #1e90ff;
+  box-shadow: 0 0 10px rgba(30, 144, 255, 0.3);
+}
+
+.upload-btn.spec-btn:hover {
+  background: rgba(30, 144, 255, 0.4);
+  box-shadow: 0 0 20px rgba(30, 144, 255, 0.6);
+  text-shadow: 0 0 10px #1e90ff;
 }
 
 .upload-btn[style*="background: #9c27b0"] {
