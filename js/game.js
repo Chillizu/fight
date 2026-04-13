@@ -82,14 +82,26 @@ function checkCombat() {
       if (player2.isBlocking) {
         dmg *= 0.2;
         if (typeof spawnParticles === "function") {
-          spawnParticles(player2.x + player2.width / 2, player2.y + player2.height / 2, "#fff", 5);
+          spawnParticles(
+            player2.x + player2.width / 2,
+            player2.y + player2.height / 2,
+            "#fff",
+            5,
+          );
         }
       } else {
         player1.skillPoints++;
         // Impact particles at hit position
         if (typeof spawnParticles === "function") {
-          const hitX = player1.facingRight ? player2.x : player2.x + player2.width;
-          spawnParticles(hitX, player2.y + player2.height / 2, player1.color, 10);
+          const hitX = player1.facingRight
+            ? player2.x
+            : player2.x + player2.width;
+          spawnParticles(
+            hitX,
+            player2.y + player2.height / 2,
+            player1.color,
+            10,
+          );
         }
       }
 
@@ -98,12 +110,23 @@ function checkCombat() {
 
       // 伤害数字浮动效果
       if (typeof spawnFloatingText === "function") {
-        spawnFloatingText(player2.x + player2.width / 2, player2.y - 20, `-${Math.floor(dmg)}`, "#ff4444", false);
+        spawnFloatingText(
+          player2.x + player2.width / 2,
+          player2.y - 20,
+          `-${Math.floor(dmg)}`,
+          "#ff4444",
+          false,
+        );
       }
 
       // 受伤粒子效果
       if (typeof spawnParticles === "function") {
-        spawnParticles(player2.x + player2.width / 2, player2.y + player2.height / 2, "#ff6666", 15);
+        spawnParticles(
+          player2.x + player2.width / 2,
+          player2.y + player2.height / 2,
+          "#ff6666",
+          15,
+        );
       }
 
       hitStopFrames = HIT_STOP_FRAMES;
@@ -147,14 +170,26 @@ function checkCombat() {
       if (player1.isBlocking) {
         dmg *= 0.2;
         if (typeof spawnParticles === "function") {
-          spawnParticles(player1.x + player1.width / 2, player1.y + player1.height / 2, "#fff", 5);
+          spawnParticles(
+            player1.x + player1.width / 2,
+            player1.y + player1.height / 2,
+            "#fff",
+            5,
+          );
         }
       } else {
         player2.skillPoints++;
         // Impact particles at hit position
         if (typeof spawnParticles === "function") {
-          const hitX = player2.facingRight ? player1.x : player1.x + player1.width;
-          spawnParticles(hitX, player1.y + player1.height / 2, player2.color, 10);
+          const hitX = player2.facingRight
+            ? player1.x
+            : player1.x + player1.width;
+          spawnParticles(
+            hitX,
+            player1.y + player1.height / 2,
+            player2.color,
+            10,
+          );
         }
       }
 
@@ -163,12 +198,23 @@ function checkCombat() {
 
       // 伤害数字浮动效果
       if (typeof spawnFloatingText === "function") {
-        spawnFloatingText(player1.x + player1.width / 2, player1.y - 20, `-${Math.floor(dmg)}`, "#ff4444", false);
+        spawnFloatingText(
+          player1.x + player1.width / 2,
+          player1.y - 20,
+          `-${Math.floor(dmg)}`,
+          "#ff4444",
+          false,
+        );
       }
 
       // 受伤粒子效果
       if (typeof spawnParticles === "function") {
-        spawnParticles(player1.x + player1.width / 2, player1.y + player1.height / 2, "#ff6666", 15);
+        spawnParticles(
+          player1.x + player1.width / 2,
+          player1.y + player1.height / 2,
+          "#ff6666",
+          15,
+        );
       }
 
       hitStopFrames = HIT_STOP_FRAMES;
@@ -320,12 +366,14 @@ function initializeGame() {
   canvas.setAttribute("tabindex", "0");
   canvas.focus();
 
-  // Create players
+  // Use selected subjects or fallback to defaults
   const p1SubjectKey =
-    typeof getRandomSubject === "function" ? getRandomSubject() : "biology";
+    typeof selectedP1Subject !== "undefined" && selectedP1Subject
+      ? selectedP1Subject
+      : "biology";
   const p2SubjectKey =
-    typeof getRandomSubject === "function"
-      ? getRandomSubject(p1SubjectKey)
+    typeof selectedP2Subject !== "undefined" && selectedP2Subject
+      ? selectedP2Subject
       : "chemistry";
 
   player1 = new Player(
@@ -371,19 +419,43 @@ function setupKeyboardInput() {
       // Prevent movement keys from being tracked during quiz
       if (Object.prototype.hasOwnProperty.call(keys, key)) delete keys[key];
 
-      // Map WASD and Arrows to 0, 1, 2, 3
-      if (key === "w" || key === "arrowup" || key === "1") {
-        if (typeof handleAnswer === "function") handleAnswer(0);
-        e.preventDefault();
-      } else if (key === "s" || key === "arrowdown" || key === "2") {
-        if (typeof handleAnswer === "function") handleAnswer(1);
-        e.preventDefault();
-      } else if (key === "a" || key === "arrowleft") {
-        if (typeof handleAnswer === "function") handleAnswer(2);
-        e.preventDefault();
-      } else if (key === "d" || key === "arrowright") {
-        if (typeof handleAnswer === "function") handleAnswer(3);
-        e.preventDefault();
+      // Distinguish between P1 (WASD) and P2 (Arrow Keys)
+      const isP1Caster =
+        typeof qCaster !== "undefined" && qCaster && qCaster === player1;
+      const isP2Caster =
+        typeof qCaster !== "undefined" && qCaster && qCaster === player2;
+
+      // P1 uses WASD: W=0, S=1, A=2, D=3
+      if (isP1Caster) {
+        if (key === "w") {
+          if (typeof handleAnswer === "function") handleAnswer(0);
+          e.preventDefault();
+        } else if (key === "s") {
+          if (typeof handleAnswer === "function") handleAnswer(1);
+          e.preventDefault();
+        } else if (key === "a") {
+          if (typeof handleAnswer === "function") handleAnswer(2);
+          e.preventDefault();
+        } else if (key === "d") {
+          if (typeof handleAnswer === "function") handleAnswer(3);
+          e.preventDefault();
+        }
+      }
+      // P2 uses Arrow Keys: Up=0, Down=1, Left=2, Right=3
+      else if (isP2Caster) {
+        if (key === "arrowup") {
+          if (typeof handleAnswer === "function") handleAnswer(0);
+          e.preventDefault();
+        } else if (key === "arrowdown") {
+          if (typeof handleAnswer === "function") handleAnswer(1);
+          e.preventDefault();
+        } else if (key === "arrowleft") {
+          if (typeof handleAnswer === "function") handleAnswer(2);
+          e.preventDefault();
+        } else if (key === "arrowright") {
+          if (typeof handleAnswer === "function") handleAnswer(3);
+          e.preventDefault();
+        }
       }
       return;
     }
@@ -407,7 +479,13 @@ function setupKeyboardInput() {
  * @param {string} effectDesc - 具体效果描述
  * @param {string} emoji - 表情符号
  */
-function showSkillNotification(skillName, playerName, color, effectDesc, emoji) {
+function showSkillNotification(
+  skillName,
+  playerName,
+  color,
+  effectDesc,
+  emoji,
+) {
   const notification = document.createElement("div");
 
   notification.style.cssText = `
@@ -481,6 +559,13 @@ if (typeof handleAnswer === "function") {
  */
 document.addEventListener("DOMContentLoaded", () => {
   setupKeyboardInput();
-  initializeGame();
-  gameLoop();
+
+  // Show subject selector first instead of starting game immediately
+  if (typeof initSubjectSelector === "function") {
+    initSubjectSelector();
+  } else {
+    // Fallback if selector not loaded
+    initializeGame();
+    gameLoop();
+  }
 });

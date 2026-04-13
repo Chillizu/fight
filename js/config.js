@@ -8,8 +8,8 @@ const GRAVITY = 0.85;
 const GROUND_Y = 390;
 
 // === 游戏时间常量 ===
-const GAME_DURATION = 60;
-const Q_MAX_TIME = 240;
+const GAME_DURATION = 40;
+const Q_MAX_TIME = 160;
 
 // === 玩家常量 ===
 const MAX_HP = 1000;
@@ -30,15 +30,15 @@ const DAMAGE_VARIANCE = 5;
 
 // === 技能伤害倍数 ===
 const SKILL_DAMAGE_MULTIPLIER = {
-  giant: 1.3,      // 变大：伤害增加30%
-  poison: 0.8,     // 中毒：伤害减少20%（但有持续伤害）
-  root: 0.9,       // 根植：伤害减少10%（控制技能）
-  reverse: 1.0,    // 反向：伤害不变
-  berserk: 1.6,    // 狂暴：伤害增加60%
+  giant: 1.3, // 变大：伤害增加30%
+  poison: 0.8, // 中毒：伤害减少20%（但有持续伤害）
+  root: 0.9, // 根植：伤害减少10%（控制技能）
+  reverse: 1.0, // 反向：伤害不变
+  berserk: 1.6, // 狂暴：伤害增加60%
   invincible: 0.5, // 无敌：伤害减少50%（防守技能）
-  silence: 1.1,    // 沉默：伤害增加10%
-  heal: 0.0,       // 治疗：无伤害
-  meteor: 1.4,     // 流星：伤害增加40%
+  silence: 1.1, // 沉默：伤害增加10%
+  heal: 0.0, // 治疗：无伤害
+  meteor: 1.4, // 流星：伤害增加40%
 };
 
 // === 特效常量 ===

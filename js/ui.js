@@ -93,11 +93,12 @@ function updateP1HealthUI(hp) {
     let percent = (hp / MAX_HP) * 100;
     let currentWidth = parseFloat(p1HealthBar.style.width) || 100;
 
-    if (currentWidth > percent) { // Damage taken
+    if (currentWidth > percent) {
+      // Damage taken
       let wrapper = p1HealthBar.parentElement;
-      wrapper.classList.remove('shake-ui');
+      wrapper.classList.remove("shake-ui");
       void wrapper.offsetWidth; // Trigger reflow
-      wrapper.classList.add('shake-ui');
+      wrapper.classList.add("shake-ui");
 
       // Spawn UI particles on the health bar
       if (typeof spawnParticles === "function") {
@@ -122,15 +123,21 @@ function updateP2HealthUI(hp) {
     let percent = (hp / MAX_HP) * 100;
     let currentWidth = parseFloat(p2HealthBar.style.width) || 100;
 
-    if (currentWidth > percent) { // Damage taken
+    if (currentWidth > percent) {
+      // Damage taken
       let wrapper = p2HealthBar.parentElement;
-      wrapper.classList.remove('shake-ui');
+      wrapper.classList.remove("shake-ui");
       void wrapper.offsetWidth; // Trigger reflow
-      wrapper.classList.add('shake-ui');
+      wrapper.classList.add("shake-ui");
 
       // Spawn UI particles on the health bar
       if (typeof spawnParticles === "function") {
-        spawnParticles(CANVAS_WIDTH - 150 + Math.random() * 100, 30, "#ff4e50", 8);
+        spawnParticles(
+          CANVAS_WIDTH - 150 + Math.random() * 100,
+          30,
+          "#ff4e50",
+          8,
+        );
       }
     }
     p2HealthBar.style.width = percent + "%";
@@ -351,6 +358,18 @@ function createAIGenerationPanel() {
 function showQuestionModal(question, casterSubject) {
   hideAllModals(); // Ensure no duplicates
 
+  // Determine if P1 or P2 is casting by checking global qCaster
+  const isP1Caster =
+    typeof qCaster !== "undefined" && qCaster && qCaster === player1;
+  const isP2Caster =
+    typeof qCaster !== "undefined" && qCaster && qCaster === player2;
+
+  // Set key labels based on who is casting
+  let keys = ["W", "S", "A", "D"]; // Default to P1 (WASD)
+  if (isP2Caster) {
+    keys = ["↑", "↓", "←", "→"]; // P2 uses arrow keys
+  }
+
   let modal = document.createElement("div");
   modal.id = "question-modal";
   modal.className = "modal show";
@@ -360,19 +379,19 @@ function showQuestionModal(question, casterSubject) {
       <div id="q-text">${question.q}</div>
       <div class="q-options-grid">
         <div class="q-option" onclick="handleAnswer(0)">
-          <span class="q-key">W</span>
+          <span class="q-key">${keys[0]}</span>
           <span>${question.a[0]}</span>
         </div>
         <div class="q-option" onclick="handleAnswer(1)">
-          <span class="q-key">S</span>
+          <span class="q-key">${keys[1]}</span>
           <span>${question.a[1]}</span>
         </div>
         <div class="q-option" onclick="handleAnswer(2)">
-          <span class="q-key">A</span>
+          <span class="q-key">${keys[2]}</span>
           <span>${question.a[2]}</span>
         </div>
         <div class="q-option" onclick="handleAnswer(3)">
-          <span class="q-key">D</span>
+          <span class="q-key">${keys[3]}</span>
           <span>${question.a[3]}</span>
         </div>
       </div>
@@ -395,7 +414,9 @@ function hideAllModals() {
   const spec = document.getElementById("spec-modal");
   if (spec) spec.classList.remove("show");
 
-  let modals = document.querySelectorAll("#question-modal, #ai-panel, #game-over-modal");
+  let modals = document.querySelectorAll(
+    "#question-modal, #ai-panel, #game-over-modal",
+  );
   modals.forEach(function (m) {
     m.remove();
   });
@@ -487,4 +508,3 @@ function showGameOverScreen() {
     gameContainer.appendChild(modal);
   }
 }
-
