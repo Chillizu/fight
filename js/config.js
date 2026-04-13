@@ -95,8 +95,8 @@ const SPRITE_ANIM_ROWS = {
 // === 默认资源（可选；为空则不会请求，避免 404）===
 // 默认背景：硬加载根目录的 background.png（存在则自动显示）
 const DEFAULT_BG_SRC = "background.png";
-const DEFAULT_SPRITE_P1_SRC = "Gemini_Generated_Image_acm0h6acm0h6acm0.png";
-const DEFAULT_SPRITE_P2_SRC = "Gemini_Generated_Image_acm0h6acm0h6acm0.png";
+const DEFAULT_SPRITE_P1_SRC = "sprite.png";
+const DEFAULT_SPRITE_P2_SRC = "sprite.png";
 
 // === 智谱 AI (BigModel) 配置 ===
 const BIGMODEL_CONFIG = {

@@ -246,112 +246,34 @@ class Player {
     if (this.hasCustomSprite && this.spriteMeta && this.spriteImg.complete && this.spriteImg.naturalHeight > 0) {
       this._drawSpriteSheetDynamic(ctx);
     } else {
-      // Fallback: draw simple stickman
-      this._drawStickman(ctx);
+      // Fallback: draw stylish placeholder
+      this._drawPlaceholder(ctx);
     }
   }
 
   /**
-   * Draw stickman fallback
+   * Draw stylish placeholder
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    */
-  _drawStickman(ctx) {
+  _drawPlaceholder(ctx) {
     ctx.save();
-
-    // Flip if facing left
-    if (!this.facingRight) {
-      ctx.translate(this.x + this.width, 0);
-      ctx.scale(-1, 1);
-      ctx.translate(-this.x, 0);
-    }
 
     const x = this.x;
     const y = this.y;
     const w = this.width;
     const h = this.height;
 
-    // Subtle shadow
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
-    ctx.beginPath();
-    ctx.ellipse(x + w / 2, GROUND_Y + 6, w * 0.45, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Glowing rect
+    ctx.strokeStyle = this.isP1 ? "#00f2fe" : "#ff4e50";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(x, y, w, h);
 
-    // Torso
-    ctx.fillStyle = this.color;
-    const torsoW = w * 0.45;
-    const torsoH = h * 0.52;
-    const torsoX = x + (w - torsoW) / 2;
-    const torsoY = y + h * 0.28;
-    ctx.fillRect(torsoX, torsoY, torsoW, torsoH);
-
-    // Head
-    ctx.fillStyle = "#f2c9a0";
-    const headR = Math.min(w, h) * 0.16;
-    const headCX = x + w / 2;
-    const headCY = y + h * 0.18;
-    ctx.beginPath();
-    ctx.arc(headCX, headCY, headR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eyes
-    ctx.fillStyle = "#111";
-    const eyeOffsetX = headR * 0.45;
-    const eyeY = headCY - headR * 0.15;
-    const eyeR = Math.max(1, headR * 0.12);
-    ctx.beginPath();
-    ctx.arc(headCX - eyeOffsetX, eyeY, eyeR, 0, Math.PI * 2);
-    ctx.arc(headCX + eyeOffsetX, eyeY, eyeR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Arms
-    ctx.strokeStyle = this.color;
-    ctx.lineWidth = Math.max(3, w * 0.08);
-    ctx.lineCap = "round";
-
-    const shoulderY = torsoY + torsoH * 0.2;
-    const shoulderLeftX = torsoX + torsoW * 0.1;
-    const shoulderRightX = torsoX + torsoW * 0.9;
-
-    const armSwing = Math.sin(Date.now() / 120) * (this.isGrounded ? 10 : 4);
-
-    // Left arm
-    ctx.beginPath();
-    ctx.moveTo(shoulderLeftX, shoulderY);
-    ctx.lineTo(x + w * 0.18, y + h * 0.62 + armSwing);
-    ctx.stroke();
-
-    // Right arm (punch extends)
-    let punchExt = 0;
-    if (this.isAttacking) punchExt = w * 0.22;
-
-    ctx.beginPath();
-    ctx.moveTo(shoulderRightX, shoulderY);
-    ctx.lineTo(x + w * 0.82 + punchExt, y + h * 0.62 - armSwing);
-    ctx.stroke();
-
-    // Fist
-    if (this.isAttacking) {
-      ctx.fillStyle = "#f2c9a0";
-      ctx.beginPath();
-      ctx.arc(x + w * 0.84 + punchExt, y + h * 0.62 - armSwing, headR * 0.35, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Legs
-    ctx.strokeStyle = "#2c3e50";
-    const hipY = torsoY + torsoH;
-    const hipLeftX = torsoX + torsoW * 0.3;
-    const hipRightX = torsoX + torsoW * 0.7;
-
-    const run = Math.abs(this.velocityX) > 0.1 ? 1 : 0;
-    const legSwing = Math.sin(Date.now() / 90) * (run ? 14 : 4);
-
-    ctx.beginPath();
-    ctx.moveTo(hipLeftX, hipY);
-    ctx.lineTo(x + w * 0.38, y + h * 0.98 + legSwing);
-    ctx.moveTo(hipRightX, hipY);
-    ctx.lineTo(x + w * 0.62, y + h * 0.98 - legSwing);
-    ctx.stroke();
+    // [NULL] Text
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.font = "bold 14px 'Fira Sans'";
+    ctx.textAlign = "center";
+    ctx.fillText("[[NULL]]", x + w / 2, y + h / 2 + 5);
 
     ctx.restore();
   }
