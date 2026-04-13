@@ -1,54 +1,136 @@
-# Campus Fighting Game
+# 🎮 校园大乱斗 - 街机格斗游戏
 
-A local multiplayer 2.5D fighting game with knowledge trivia.
+一个充满街机风格的网页格斗游戏，融合了9个学科的知识竞答系统。
 
-## Quick Start
+## 🎯 游戏特色
 
-### Windows (Recommended)
+- **街机风格美术** - 霓虹色、CRT扫描线、像素艺术
+- **9个学科角色** - 生物、化学、物理、语文、数学、英语、政治、历史、地理
+- **知识竞答系统** - 答题正确才能释放大招
+- **丰富的视觉效果** - 粒子爆炸、伤害数字、技能通知
+- **动态平衡系统** - 每个技能都有独特的伤害倍数和效果
 
-Double-click `init.bat`
+## 🚀 快速开始
 
-### Manual Start
-
+### 启动游戏
 ```bash
-# Python
+# 使用Python
 python -m http.server 8000
 
-# Node.js
+# 或使用Node.js
 npx http-server -p 8080 -c-1
 ```
 
-Access: http://localhost:8000
+然后访问 `http://localhost:8000`
 
-## Project Structure
+### 上传精灵图
+- 点击底部的 **"加载P1雪碧图"** 或 **"加载P2雪碧图"**
+- 选择符合规范的精灵图（768x1024, 4x3网格）
+- 或使用 **"📸 AI生成角色"** 自动生成
+
+### 开始游戏
+- **P1控制**: WASD 移动, J 攻击, K 释放技能
+- **P2控制**: ↑↓←→ 移动, 1 攻击, 2 释放技能
+
+## 📚 文档
+
+- **[项目结构](docs/PROJECT_STRUCTURE.md)** - 目录说明和文件用途
+- **[精灵图生成](docs/SPRITE_GENERATION_PROMPT.md)** - AI生成精灵图的提示词模板
+- **[街机风格指南](arcade.md)** - 设计风格参考
+
+## 🎨 AI生成精灵图
+
+使用 `docs/SPRITE_GENERATION_PROMPT.md` 中的提示词模板，可以用AI工具生成符合游戏规范的精灵图。
+
+**精灵图规范：**
+- 分辨率：768 x 1024 像素
+- 网格：4列 x 3行（共12帧）
+- 每帧：192 x 341 像素
+- 背景：纯白色 RGB(255,255,255)
+- 风格：2D像素艺术 / 街机风格
+
+## 🎓 学科系统
+
+### 9个学科及其技能
+
+| 学科 | 颜色 | 技能 | 效果 |
+|------|------|------|------|
+| 🧬 生物 | 绿色 | 变大 | 体型增大50% \| 15秒 |
+| ⚗️ 化学 | 紫色 | 毒气 | 每秒扣22伤 \| 10秒 |
+| ⚡ 物理 | 蓝色 | 禁锢 | 无法移动 \| 5秒 |
+| 📖 语文 | 红色 | 反转 | 操作反向 \| 15秒 |
+| 📐 数学 | 橙色 | 狂暴 | 攻击+8 \| 7秒 |
+| 🌍 英语 | 青色 | 无敌 | 无敌状态 \| 5秒 |
+| 🏛️ 政治 | 灰色 | 沉默 | 攻击-5 \| 15秒 |
+| 📜 历史 | 棕色 | 回血 | 恢复200 HP |
+| 🌍 地理 | 浅绿 | 流星 | 瞬时伤害180点 |
+
+## ⚙️ 游戏平衡参数
+
+- **血量**: 1000 HP
+- **基础攻击**: 25 伤害
+- **攻击冷却**: 12 帧（0.2秒）
+- **技能点**: 13点释放大招
+- **答题时间**: 4秒
+
+## 📁 项目结构
 
 ```
 Fight_/
-├── index.html              # Main game file
-├── js/
-│   ├── config.js           # ⭐ Central config (all parameters)
-│   ├── game.js             # Game loop, collision detection
-│   ├── player.js           # Player class, animation, attacks
-│   ├── ui.js               # UI rendering, resources
-│   ├── ui_extend.js        # AI integration, background removal
-│   ├── subjects.js         # 13 skill definitions
-│   └── particles.js        # Particle effects
+├── index.html                 # 主游戏页面
+├── css/style.css              # 街机风格样式
+├── js/                        # 游戏逻辑
+│   ├── config.js              # 游戏配置
+│   ├── subjects.js            # 学科定义
+│   ├── player.js              # 玩家和Sprite系统
+│   ├── game.js                # 主游戏循环
+│   ├── particles.js           # 粒子效果
+│   ├── ui.js                  # UI系统
+│   └── ui_extend.js           # 扩展功能
 ├── assets/
-│   ├── backgrounds/        # Game backgrounds
-│   └── sprites/            # Character sprite sheets (4x3 grid)
-├── tools/
-│   ├── verify_system.py    # System checker
-│   └── sprite_processor.py # Sprite batch processor
-└── AGENTS.md               # AI development guidelines
+│   ├── sprites/               # 精灵图（P1.png, P2.png）
+│   ├── backgrounds/           # 背景图片
+│   └── data/questions.json    # 题库
+└── docs/
+    ├── PROJECT_STRUCTURE.md   # 项目结构说明
+    └── SPRITE_GENERATION_PROMPT.md  # 精灵图生成提示词
 ```
 
-## Technical Stack
+## 🎮 游戏玩法
 
-- **Frontend**: HTML5 Canvas 2D (vanilla JavaScript)
-- **Backend**: None (100% client-side)
-- **AI**: LMStudio (local) or BigModel API (cloud)
-- **Tools**: Python 3.6+ (Pillow), Node.js 12+
+1. **基础战斗**
+   - 按攻击键连续出拳
+   - 每次命中积累技能点
+   - 按格挡键减少伤害（20%）
 
-## License
+2. **技能系统**
+   - 积累13个技能点
+   - 按技能键触发答题
+   - 答对题目释放大招
+   - 大招有独特的效果和伤害倍数
+
+3. **答题机制**
+   - 4秒内选择正确答案
+   - 答对：释放技能，获得Buff
+   - 答错：失去技能点，对手获得技能点
+
+4. **获胜条件**
+   - 将对手血量降至0
+   - 60秒内血量更多的玩家获胜
+
+## 🎨 视觉效果
+
+- **CRT扫描线** - 复古显示器效果
+- **霓虹发光** - 高对比度的青色和红色
+- **粒子爆炸** - 攻击和技能释放时的视觉反馈
+- **伤害数字** - 浮动的伤害值显示
+- **技能通知** - 全屏的技能释放提示
+- **屏幕震动** - Hit时的视觉冲击
+
+## 📝 许可证
 
 MIT License
+
+---
+
+**最后更新**: 2026年4月13日
