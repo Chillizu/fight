@@ -404,9 +404,13 @@ function setupKeyboardInput() {
  * @param {string} skillName - 技能名称
  * @param {string} playerName - 玩家名称
  * @param {string} color - 颜色
+ * @param {string} effectDesc - 效果描述
+ * @param {string} emoji - 表情符号
  */
-function showSkillNotification(skillName, playerName, color) {
+function showSkillNotification(skillName, playerName, color, effectDesc, emoji) {
   const notification = document.createElement("div");
+  const effectText = effectDesc ? `·${effectDesc}` : "";
+
   notification.style.cssText = `
     position: fixed;
     top: 50%;
@@ -421,7 +425,7 @@ function showSkillNotification(skillName, playerName, color) {
     animation: skillPop 0.8s ease-out forwards;
     font-family: Arial, sans-serif;
   `;
-  notification.textContent = `🔥 ${playerName} 释放了 ${skillName}！`;
+  notification.textContent = `🔥 ${playerName} 释放了 ${emoji}${skillName}${effectText}！`;
 
   // 添加动画样式
   if (!document.getElementById("skillNotificationStyle")) {

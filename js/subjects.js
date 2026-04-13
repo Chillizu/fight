@@ -1,5 +1,5 @@
 /**
- * 13种学科技能定义
+ * 9种学科技能定义
  * 每个技能包含：名称、颜色、效果描述、触发函数
  */
 
@@ -14,10 +14,6 @@ const SUBJECT_COLORS = {
   politics: "#607d8b", // 政治 - 灰色
   history: "#795548",   // 历史 - 棕色
   geography: "#8bc34a", // 地理 - 浅绿
-  pe: "#ffeb3b",      // 体育 - 黄色
-  info: "#e91e63",    // 信息 - 粉色
-  music: "#9c27b0",   // 音乐 - 紫色
-  art: "#ff5722"       // 美术 - 深橙
 };
 
 // 学科定义
@@ -103,42 +99,6 @@ const SUBJECTS = {
     effect: "meteor",
     damage: 90, // Note: damage is doubled in applySkillEffect, so 90 * 2 = 180
   },
-  pe: {
-    key: "pe",
-    name: "体育",
-    color: SUBJECT_COLORS.pe,
-    emoji: "🏃",
-    description: "加速",
-    effect: "speed",
-    damage: 20,
-  },
-  info: {
-    key: "info",
-    name: "信息",
-    color: SUBJECT_COLORS.info,
-    emoji: "💻",
-    description: "黑客",
-    effect: "hack",
-    damage: 25,
-  },
-  music: {
-    key: "music",
-    name: "音乐",
-    color: SUBJECT_COLORS.music,
-    emoji: "🎵",
-    description: "眩晕",
-    effect: "stun",
-    damage: 30,
-  },
-  art: {
-    key: "art",
-    name: "美术",
-    color: SUBJECT_COLORS.art,
-    emoji: "🎨",
-    description: "幻象",
-    effect: "illusion",
-    damage: 20,
-  },
 };
 
 // 学科键列表（排除指定学科）
@@ -146,7 +106,7 @@ function getSubjectKeys(excludeKey) {
   return Object.keys(SUBJECTS).filter((k) => k !== excludeKey);
 }
 
-// ���机获取学科
+// 随机获取学科
 function getRandomSubject(excludeKey) {
   const keys = getSubjectKeys(excludeKey);
   return keys[Math.floor(Math.random() * keys.length)];

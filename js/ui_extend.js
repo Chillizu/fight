@@ -414,10 +414,12 @@ function applySkillEffect(caster, target) {
   const color = caster.subject.color;
   const skillName = caster.subject.name;
   const playerName = caster.isP1 ? "P1" : "P2";
+  const emoji = caster.subject.emoji;
+  const description = caster.subject.description;
 
-  // 显示全屏技能通知
+  // 显示全屏技能通知（包含效果描述）
   if (typeof showSkillNotification === "function") {
-    showSkillNotification(skillName, playerName, color);
+    showSkillNotification(skillName, playerName, color, description, emoji);
   }
 
   // 造成伤害
@@ -491,33 +493,6 @@ function applySkillEffect(caster, target) {
       // 浅绿色陨石雨
       for(let i=0; i<8; i++) {
         if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + (Math.random()-0.5)*60, target.y - 50 - Math.random()*40, color, 35);
-      }
-      break;
-    case "speed":
-      caster.setBuff("speed", BUFF_DURATION.berserk);
-      // 黄色速度线
-      for(let i=0; i<6; i++) {
-        if(typeof spawnParticles === "function") spawnParticles(caster.x + caster.width/2 + i*10, caster.y + caster.height/2, color, 25);
-      }
-      break;
-    case "hack":
-      // 粉色数字雨
-      for(let i=0; i<10; i++) {
-        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + (Math.random()-0.5)*50, target.y + (Math.random()-0.5)*50, color, 20);
-      }
-      break;
-    case "stun":
-      target.setBuff("root", BUFF_DURATION.root);
-      // 紫色星星旋转
-      for(let i=0; i<8; i++) {
-        const angle = (i/8) * Math.PI * 2;
-        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + Math.cos(angle)*25, target.y + Math.sin(angle)*25, color, 15);
-      }
-      break;
-    case "illusion":
-      // 深橙色闪烁幻象
-      for(let i=0; i<12; i++) {
-        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + (Math.random()-0.5)*40, target.y + (Math.random()-0.5)*40, color, 12);
       }
       break;
   }
