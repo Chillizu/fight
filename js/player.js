@@ -220,7 +220,6 @@ class Player {
       if (typeof triggerQuestionMode === "function") {
         triggerQuestionMode(this);
       } else {
-        console.log("Skill triggered! Question mode: " + this.subjectKey);
       }
     }
 

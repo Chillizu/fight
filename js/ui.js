@@ -67,7 +67,6 @@ function initializeGameUI() {
   };
   bgImg.onerror = function () {
     hasCustomBackground = false;
-    console.log("背景加载失败，使用默认背景");
   };
   if (bgSrc) {
     bgImg.src = bgSrc;

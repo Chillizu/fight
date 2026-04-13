@@ -28,6 +28,23 @@ const ATTACK_HITBOX_HEIGHT = 30;
 const BASE_ATTACK_DAMAGE = 25;
 const DAMAGE_VARIANCE = 5;
 
+// === 技能伤害倍数 ===
+const SKILL_DAMAGE_MULTIPLIER = {
+  giant: 1.3,      // 变大：伤害增加30%
+  poison: 0.8,     // 中毒：伤害减少20%（但有持续伤害）
+  root: 0.9,       // 根植：伤害减少10%（控制技能）
+  reverse: 1.0,    // 反向：伤害不变
+  berserk: 1.6,    // 狂暴：伤害增加60%
+  invincible: 0.5, // 无敌：伤害减少50%（防守技能）
+  silence: 1.1,    // 沉默：伤害增加10%
+  heal: 0.0,       // 治疗：无伤害
+  meteor: 1.4,     // 流星：伤害增加40%
+  speed: 1.2,      // 加速：伤害增加20%
+  hack: 1.3,       // 黑客：伤害增加30%
+  stun: 1.1,       // 眩晕：伤害增加10%
+  illusion: 0.95,  // 幻象：伤害减少5%
+};
+
 // === 特效常量 ===
 const HIT_STOP_FRAMES = 3;
 const SCREEN_SHAKE_FRAMES = 8;

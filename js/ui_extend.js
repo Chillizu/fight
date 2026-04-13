@@ -306,9 +306,7 @@ async function loadQuestions() {
   try {
     const response = await fetch("assets/data/questions.json");
     QUESTION_BANK = await response.json();
-    console.log("题库加载成功:", Object.keys(QUESTION_BANK));
   } catch (e) {
-    console.error("题库加载失败，使用备用题目:", e);
     QUESTION_BANK = {
       default: [
         { q: "DNA的中文名称是？", a: ["脱氧核糖核酸", "核糖核酸", "蛋白质", "氨基酸"], ans: 0 },
@@ -576,7 +574,6 @@ const PHOTO_CACHE = { p1: null, p2: null };
  */
 async function generateCharacter(base64, desc, isP1) {
   if (!AI_GENERATION_PARAMS.ENABLED) {
-    console.log("AI生成已禁用");
     return;
   }
   
@@ -586,7 +583,6 @@ async function generateCharacter(base64, desc, isP1) {
       await generateWithLMStudio(base64, desc, isP1);
       return;
     } catch (e) {
-      console.warn("LMStudio 失败，尝试 BigModel:", e);
     }
   }
   
@@ -596,11 +592,9 @@ async function generateCharacter(base64, desc, isP1) {
       await generateWithBigModel(base64, desc, isP1);
       return;
     } catch (e) {
-      console.error("BigModel 失败:", e);
     }
   }
   
-  console.log("无可用AI，跳过生成");
 }
 
 /**
@@ -622,7 +616,6 @@ async function generateWithLMStudio(photoBase64, desc, isP1) {
   });
   
   let data = await response.json();
-  console.log("LMStudio 响应:", data);
   
   // TODO: 解析响应并生成图片
 }

@@ -68,6 +68,16 @@ function checkCombat() {
         (player1.buffs.berserk > 0 ? 8 : 0) -
         (player1.buffs.silence > 0 ? 5 : 0);
 
+      // 应用技能伤害倍数
+      let skillMultiplier = 1.0;
+      for (let buff in player1.buffs) {
+        if (player1.buffs[buff] > 0 && SKILL_DAMAGE_MULTIPLIER[buff]) {
+          skillMultiplier = SKILL_DAMAGE_MULTIPLIER[buff];
+          break; // 只应用第一个活跃buff的倍数
+        }
+      }
+      dmg *= skillMultiplier;
+
       // Guard reduction
       if (player2.isBlocking) {
         dmg *= 0.2;
@@ -86,6 +96,16 @@ function checkCombat() {
       player2.hp -= dmg;
       if (player2.hp < 0) player2.hp = 0;
 
+      // 伤害数字浮动效果
+      if (typeof createFloatingText === "function") {
+        createFloatingText(player2.x + player2.width / 2, player2.y - 20, `-${Math.floor(dmg)}`, "#ff4444");
+      }
+
+      // 受伤粒子效果
+      if (typeof spawnParticles === "function") {
+        spawnParticles(player2.x + player2.width / 2, player2.y + player2.height / 2, "#ff6666", 15);
+      }
+
       hitStopFrames = HIT_STOP_FRAMES;
       screenShakeTime = SCREEN_SHAKE_FRAMES;
       player1.attackTimer = 0;
@@ -95,8 +115,6 @@ function checkCombat() {
         player2.hp = 0;
         endGame();
       }
-
-      console.log(`P1 hit P2! Combo: ${player1.skillPoints}`);
     }
   }
 
@@ -114,6 +132,16 @@ function checkCombat() {
         BASE_ATTACK_DAMAGE +
         (player2.buffs.berserk > 0 ? 8 : 0) -
         (player2.buffs.silence > 0 ? 5 : 0);
+
+      // 应用技能伤害倍数
+      let skillMultiplier = 1.0;
+      for (let buff in player2.buffs) {
+        if (player2.buffs[buff] > 0 && SKILL_DAMAGE_MULTIPLIER[buff]) {
+          skillMultiplier = SKILL_DAMAGE_MULTIPLIER[buff];
+          break; // 只应用第一个活跃buff的倍数
+        }
+      }
+      dmg *= skillMultiplier;
 
       // Guard reduction
       if (player1.isBlocking) {
@@ -133,6 +161,16 @@ function checkCombat() {
       player1.hp -= dmg;
       if (player1.hp < 0) player1.hp = 0;
 
+      // 伤害数字浮动效果
+      if (typeof createFloatingText === "function") {
+        createFloatingText(player1.x + player1.width / 2, player1.y - 20, `-${Math.floor(dmg)}`, "#ff4444");
+      }
+
+      // 受伤粒子效果
+      if (typeof spawnParticles === "function") {
+        spawnParticles(player1.x + player1.width / 2, player1.y + player1.height / 2, "#ff6666", 15);
+      }
+
       hitStopFrames = HIT_STOP_FRAMES;
       screenShakeTime = SCREEN_SHAKE_FRAMES;
       player2.attackTimer = 0;
@@ -142,8 +180,6 @@ function checkCombat() {
         player1.hp = 0;
         endGame();
       }
-
-      console.log(`P2 hit P1! Combo: ${player2.skillPoints}`);
     }
   }
 
@@ -170,8 +206,6 @@ function updateGameTimer() {
       if (typeof timerDisplay !== "undefined" && timerDisplay) {
         timerDisplay.textContent = String(gameTimer);
       }
-
-      console.log(`Time: ${gameTimer}s`);
 
       if (gameTimer <= 0) {
         endGame();
@@ -263,7 +297,6 @@ function gameLoop() {
 function endGame() {
   isGameOver = true;
   gameState = "GAMEOVER";
-  console.log("Game Over!");
 
   if (typeof showGameOverScreen === "function") {
     showGameOverScreen();
@@ -307,8 +340,6 @@ function initializeGame() {
   // Expose for debugging / UI integration
   window.player1 = player1;
   window.player2 = player2;
-
-  console.log("Game initialized!");
   if (typeof initializeGameUI === "function") initializeGameUI();
   if (typeof updateHealthUI === "function") updateHealthUI();
   if (typeof updateSkillUI === "function") {
