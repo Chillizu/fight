@@ -404,12 +404,11 @@ function setupKeyboardInput() {
  * @param {string} skillName - 技能名称
  * @param {string} playerName - 玩家名称
  * @param {string} color - 颜色
- * @param {string} effectDesc - 效果描述
+ * @param {string} effectDesc - 具体效果描述
  * @param {string} emoji - 表情符号
  */
 function showSkillNotification(skillName, playerName, color, effectDesc, emoji) {
   const notification = document.createElement("div");
-  const effectText = effectDesc ? `·${effectDesc}` : "";
 
   notification.style.cssText = `
     position: fixed;
@@ -422,10 +421,12 @@ function showSkillNotification(skillName, playerName, color, effectDesc, emoji) 
     text-shadow: 0 0 20px ${color}, 0 0 40px rgba(0,0,0,0.8);
     pointer-events: none;
     z-index: 9999;
-    animation: skillPop 0.8s ease-out forwards;
+    animation: skillPop 1.2s ease-out forwards;
     font-family: Arial, sans-serif;
+    text-align: center;
+    line-height: 1.4;
   `;
-  notification.textContent = `🔥 ${playerName} 释放了 ${emoji}${skillName}${effectText}！`;
+  notification.innerHTML = `<div style="font-size: 48px; margin-bottom: 10px;">🔥 ${playerName} 释放了 ${emoji}${skillName}！</div><div style="font-size: 32px; color: ${color}; text-shadow: 0 0 15px ${color};">${effectDesc}</div>`;
 
   // 添加动画样式
   if (!document.getElementById("skillNotificationStyle")) {
@@ -441,6 +442,10 @@ function showSkillNotification(skillName, playerName, color, effectDesc, emoji) 
           opacity: 1;
           transform: translate(-50%, -50%) scale(1.2);
         }
+        85% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
         100% {
           opacity: 0;
           transform: translate(-50%, -50%) scale(1);
@@ -451,7 +456,7 @@ function showSkillNotification(skillName, playerName, color, effectDesc, emoji) 
   }
 
   document.body.appendChild(notification);
-  setTimeout(() => notification.remove(), 800);
+  setTimeout(() => notification.remove(), 1200);
 }
 
 /**

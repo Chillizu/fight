@@ -402,6 +402,26 @@ function triggerQuestionMode(caster) {
 }
 
 /**
+ * 生成技能效果的具体描述
+ * @param {string} effect - 技能效果类型
+ * @param {boolean} isCaster - 是否是释放者
+ */
+function getSkillEffectText(effect, isCaster) {
+  const effectTexts = {
+    giant: isCaster ? "体型增大50% | 持续15秒" : "对手体型增大50%",
+    poison: isCaster ? "对手中毒 | 每秒扣22伤 | 持续10秒" : "中毒状态 | 每秒扣22伤",
+    root: isCaster ? "对手禁锢 | 无法移动 | 持续5秒" : "禁锢状态 | 无法移动",
+    reverse: isCaster ? "对手操作反向 | 持续15秒" : "操作反向 | 左右反转",
+    berserk: isCaster ? "攻击+8 | 攻速-20% | 持续7秒" : "对手攻击+8",
+    invincible: isCaster ? "无敌状态 | 持续5秒" : "对手进入无敌",
+    silence: isCaster ? "对手沉默 | 攻击-5 | 无法放技能 | 持续15秒" : "沉默状态 | 攻击-5",
+    heal: isCaster ? "恢复200 HP" : "对手恢复200 HP",
+    meteor: isCaster ? "瞬时伤害180点" : "受到180点伤害",
+  };
+  return effectTexts[effect] || "释放技能";
+}
+
+/**
  * 应用技能效果
  * @param {Player} caster - 释放者
  * @param {Player} target - 目标
@@ -415,11 +435,11 @@ function applySkillEffect(caster, target) {
   const skillName = caster.subject.name;
   const playerName = caster.isP1 ? "P1" : "P2";
   const emoji = caster.subject.emoji;
-  const description = caster.subject.description;
+  const effectDesc = getSkillEffectText(effect, true);
 
-  // 显示全屏技能通知（包含效果描述）
+  // 显示全屏技能通知（包含具体效果描述）
   if (typeof showSkillNotification === "function") {
-    showSkillNotification(skillName, playerName, color, description, emoji);
+    showSkillNotification(skillName, playerName, color, effectDesc, emoji);
   }
 
   // 造成伤害
