@@ -97,8 +97,8 @@ function checkCombat() {
       if (player2.hp < 0) player2.hp = 0;
 
       // 伤害数字浮动效果
-      if (typeof createFloatingText === "function") {
-        createFloatingText(player2.x + player2.width / 2, player2.y - 20, `-${Math.floor(dmg)}`, "#ff4444");
+      if (typeof spawnFloatingText === "function") {
+        spawnFloatingText(player2.x + player2.width / 2, player2.y - 20, `-${Math.floor(dmg)}`, "#ff4444", false);
       }
 
       // 受伤粒子效果
@@ -162,8 +162,8 @@ function checkCombat() {
       if (player1.hp < 0) player1.hp = 0;
 
       // 伤害数字浮动效果
-      if (typeof createFloatingText === "function") {
-        createFloatingText(player1.x + player1.width / 2, player1.y - 20, `-${Math.floor(dmg)}`, "#ff4444");
+      if (typeof spawnFloatingText === "function") {
+        spawnFloatingText(player1.x + player1.width / 2, player1.y - 20, `-${Math.floor(dmg)}`, "#ff4444", false);
       }
 
       // 受伤粒子效果
@@ -284,9 +284,17 @@ function gameLoop() {
     checkCombat();
   }
 
+  // Update particles and floating texts
+  if (typeof updateParticles === "function") updateParticles();
+  if (typeof updateFloatingTexts === "function") updateFloatingTexts();
+
   // Draw players (even when paused/question/gameover, keep last frame visible)
   player1.draw(ctx);
   player2.draw(ctx);
+
+  // Draw particles and floating texts
+  if (typeof drawParticles === "function") drawParticles(ctx);
+  if (typeof drawFloatingTexts === "function") drawFloatingTexts(ctx);
 
   ctx.restore();
 }
@@ -392,21 +400,54 @@ function setupKeyboardInput() {
 }
 
 /**
- * Create floating text effect
- * @param {number} x - X position
- * @param {number} y - Y position
- * @param {string} text - Text to display
- * @param {string} color - Text color
+ * 技能释放全屏通知
+ * @param {string} skillName - 技能名称
+ * @param {string} playerName - 玩家名称
+ * @param {string} color - 颜色
  */
-function createFloatingText(x, y, text, color) {
-  if (!ctx) return;
+function showSkillNotification(skillName, playerName, color) {
+  const notification = document.createElement("div");
+  notification.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    font-weight: bold;
+    color: ${color};
+    text-shadow: 0 0 20px ${color}, 0 0 40px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 9999;
+    animation: skillPop 0.8s ease-out forwards;
+    font-family: Arial, sans-serif;
+  `;
+  notification.textContent = `🔥 ${playerName} 释放了 ${skillName}！`;
 
-  ctx.save();
-  ctx.fillStyle = color;
-  ctx.font = "bold 24px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText(text, x, y);
-  ctx.restore();
+  // 添加动画样式
+  if (!document.getElementById("skillNotificationStyle")) {
+    const style = document.createElement("style");
+    style.id = "skillNotificationStyle";
+    style.textContent = `
+      @keyframes skillPop {
+        0% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(0.5);
+        }
+        50% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.2);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 800);
 }
 
 /**
