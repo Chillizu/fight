@@ -223,6 +223,7 @@ function toggleAIGenerationPanel() {
 
 /**
  * 处理上传自定义雪碧图（兼容 index.html 的 onchange）
+ * 支持P1和P2分开上传
  */
 function loadCustomAsset(event, who) {
   const file = event?.target?.files?.[0];
@@ -237,7 +238,53 @@ function loadCustomAsset(event, who) {
     const player = isP1 ? player1 : player2;
     if (!player) return;
 
-    // Reuse the player's sprite image element so onload triggers sprite analysis.
+    // 重置sprite加载状态，设置为自定义上传
+    player.spriteImg = new Image();
+    player.hasCustomSprite = false;
+    player.spriteMeta = null;
+    player.currentSpriteLevel = 3; // 标记为自定义上传
+
+    // 重新绑定onload和onerror处理器
+    player.spriteImg.onload = () => {
+      if (typeof analyzeSpriteSheet === "function") {
+        const meta = analyzeSpriteSheet(player.spriteImg, {
+          cols: SPRITE_GRID_COLS,
+          rows: SPRITE_GRID_ROWS,
+        });
+
+        if (meta && meta.bgColor) {
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = player.spriteImg.naturalWidth;
+          tempCanvas.height = player.spriteImg.naturalHeight;
+          const tempCtx = tempCanvas.getContext("2d");
+          tempCtx.drawImage(player.spriteImg, 0, 0);
+
+          if (typeof removeBackgroundTransparent === "function") {
+            removeBackgroundTransparent(tempCanvas, meta.bgColor, 50);
+          }
+
+          player.spriteImg = new Image();
+          player.spriteImg.src = tempCanvas.toDataURL();
+          player.spriteImg.onload = () => {
+            player.hasCustomSprite = true;
+            player.spriteMeta = analyzeSpriteSheet(player.spriteImg, {
+              cols: SPRITE_GRID_COLS,
+              rows: SPRITE_GRID_ROWS,
+            });
+          };
+        } else {
+          player.hasCustomSprite = true;
+          player.spriteMeta = meta;
+        }
+      }
+    };
+
+    player.spriteImg.onerror = () => {
+      player.hasCustomSprite = false;
+      player.spriteMeta = null;
+    };
+
+    // 加载自定义上传的Sprite
     player.spriteImg.src = dataUrl;
   };
 

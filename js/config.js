@@ -110,6 +110,13 @@ const SPRITE_ANIM_ROWS = {
 // === 默认资源（可选；为空则不会请求，避免 404）===
 // 默认背景：硬加载根目录的 background.png（存在则自动显示）
 const DEFAULT_BG_SRC = "background.png";
+// Sprite加载优先级：
+// 1. assets/sprites/P1.png (P1) / assets/sprites/P2.png (P2)
+// 2. sprite.png (fallback)
+// 3. 实时导入
+// 4. [[NULL]] 占位符
+const DEFAULT_SPRITE_P1_ASSETS = "assets/sprites/P1.png";
+const DEFAULT_SPRITE_P2_ASSETS = "assets/sprites/P2.png";
 const DEFAULT_SPRITE_P1_SRC = "sprite.png";
 const DEFAULT_SPRITE_P2_SRC = "sprite.png";
 

@@ -24,6 +24,7 @@ class Player {
     this.hasCustomSprite = false;
     this.spriteMeta = null;
     this.frameIndex = 0;
+    this.isP1 = isP1;
 
     this.spriteImg.onload = () => {
       // Pre-process sprite sheet: remove background if detected
@@ -63,13 +64,13 @@ class Player {
     this.spriteImg.onerror = () => {
       this.hasCustomSprite = false;
       this.spriteMeta = null;
+      // Try next fallback
+      this.tryNextSpriteFallback();
     };
 
-    // Set default sprite sheet source (optional)
-    const defaultSpriteSrc = isP1 ? DEFAULT_SPRITE_P1_SRC : DEFAULT_SPRITE_P2_SRC;
-    if (defaultSpriteSrc) {
-      this.spriteImg.src = defaultSpriteSrc;
-    }
+    // Start sprite loading with priority: assets → fallback → custom
+    this.loadSpriteWithPriority();
+
 
     // === Physical attributes ===
     this.velocityX = 0;
@@ -379,5 +380,37 @@ class Player {
 
     // Update frame counter (faster animation = snappier feel)
     this.frameIndex += 0.3;
+  }
+
+  /**
+   * Sprite加载优先级：assets → fallback → custom
+   */
+  loadSpriteWithPriority() {
+    const assetsSrc = this.isP1 ? DEFAULT_SPRITE_P1_ASSETS : DEFAULT_SPRITE_P2_ASSETS;
+    const fallbackSrc = this.isP1 ? DEFAULT_SPRITE_P1_SRC : DEFAULT_SPRITE_P2_SRC;
+
+    // 优先级1：尝试加载 assets/sprites/P1.png 或 P2.png
+    if (assetsSrc) {
+      this.spriteImg.src = assetsSrc;
+      this.currentSpriteLevel = 1;
+    } else if (fallbackSrc) {
+      // 优先级2：加载 sprite.png fallback
+      this.spriteImg.src = fallbackSrc;
+      this.currentSpriteLevel = 2;
+    }
+  }
+
+  /**
+   * 当前Sprite加载失败时，尝试下一个fallback
+   */
+  tryNextSpriteFallback() {
+    const fallbackSrc = this.isP1 ? DEFAULT_SPRITE_P1_SRC : DEFAULT_SPRITE_P2_SRC;
+
+    // 如果还没试过fallback，现在试试
+    if (this.currentSpriteLevel === 1 && fallbackSrc) {
+      this.spriteImg.src = fallbackSrc;
+      this.currentSpriteLevel = 2;
+    }
+    // 否则放弃，使用占位符
   }
 }
