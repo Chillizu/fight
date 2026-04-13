@@ -55,7 +55,7 @@ function checkCombat() {
 
   // P1 attack detection
   let p1Hit = player1.getHitbox();
-  if (p1Hit && player1.attackTimer > player1.attackDuration - 3) {
+  if (p1Hit && player1.attackTimer > player1.attackDuration - 6) {
     let p2Body = {
       x: player2.x,
       y: player2.y,
@@ -67,10 +67,25 @@ function checkCombat() {
         BASE_ATTACK_DAMAGE +
         (player1.buffs.berserk > 0 ? 8 : 0) -
         (player1.buffs.silence > 0 ? 5 : 0);
+
+      // Guard reduction
+      if (player2.isBlocking) {
+        dmg *= 0.2;
+        if (typeof spawnParticles === "function") {
+          spawnParticles(player2.x + player2.width / 2, player2.y + player2.height / 2, "#fff", 5);
+        }
+      } else {
+        player1.skillPoints++;
+        // Impact particles at hit position
+        if (typeof spawnParticles === "function") {
+          const hitX = player1.facingRight ? player2.x : player2.x + player2.width;
+          spawnParticles(hitX, player2.y + player2.height / 2, player1.color, 10);
+        }
+      }
+
       player2.hp -= dmg;
       if (player2.hp < 0) player2.hp = 0;
 
-      player1.skillPoints++;
       hitStopFrames = HIT_STOP_FRAMES;
       screenShakeTime = SCREEN_SHAKE_FRAMES;
       player1.attackTimer = 0;
@@ -87,7 +102,7 @@ function checkCombat() {
 
   // P2 attack detection
   let p2Hit = player2.getHitbox();
-  if (p2Hit && player2.attackTimer > player2.attackDuration - 3) {
+  if (p2Hit && player2.attackTimer > player2.attackDuration - 6) {
     let p1Body = {
       x: player1.x,
       y: player1.y,
@@ -99,10 +114,25 @@ function checkCombat() {
         BASE_ATTACK_DAMAGE +
         (player2.buffs.berserk > 0 ? 8 : 0) -
         (player2.buffs.silence > 0 ? 5 : 0);
+
+      // Guard reduction
+      if (player1.isBlocking) {
+        dmg *= 0.2;
+        if (typeof spawnParticles === "function") {
+          spawnParticles(player1.x + player1.width / 2, player1.y + player1.height / 2, "#fff", 5);
+        }
+      } else {
+        player2.skillPoints++;
+        // Impact particles at hit position
+        if (typeof spawnParticles === "function") {
+          const hitX = player2.facingRight ? player1.x : player1.x + player1.width;
+          spawnParticles(hitX, player1.y + player1.height / 2, player2.color, 10);
+        }
+      }
+
       player1.hp -= dmg;
       if (player1.hp < 0) player1.hp = 0;
 
-      player2.skillPoints++;
       hitStopFrames = HIT_STOP_FRAMES;
       screenShakeTime = SCREEN_SHAKE_FRAMES;
       player2.attackTimer = 0;
@@ -176,15 +206,24 @@ function gameLoop() {
   // Update timer
   updateGameTimer();
 
+  // Question countdown (runs every frame while answering)
+  if (!isGameOver && gameState === "QUESTION") {
+    if (qTimer > 0) qTimer--;
+
+    const fill = document.getElementById("q-timer-fill");
+    if (fill) {
+      const pct = Math.max(0, Math.min(100, (qTimer / Q_MAX_TIME) * 100));
+      fill.style.width = pct + "%";
+    }
+
+    if (qTimer <= 0) {
+      // Timeout counts as wrong answer
+      if (typeof handleAnswer === "function") handleAnswer(-1);
+    }
+  }
+
   // Hit Stop handling
   if (hitStopFrames > 0) {
-    // Keep the last frame on screen, but add a subtle impact flash.
-    const alpha = 0.18 * (hitStopFrames / HIT_STOP_FRAMES);
-    ctx.save();
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    ctx.restore();
-
     hitStopFrames--;
     return;
   }
@@ -241,21 +280,28 @@ function initializeGame() {
   canvas.focus();
 
   // Create players
+  const p1SubjectKey =
+    typeof getRandomSubject === "function" ? getRandomSubject() : "biology";
+  const p2SubjectKey =
+    typeof getRandomSubject === "function"
+      ? getRandomSubject(p1SubjectKey)
+      : "chemistry";
+
   player1 = new Player(
     P1_START_X,
     P1_START_Y,
-    "#ff4e50",
+    "#00f2fe", // Matching neon cyan
     CONTROLS_P1,
     true,
-    "math",
+    p1SubjectKey,
   );
   player2 = new Player(
     P2_START_X,
     P2_START_Y,
-    "#4e50ff",
+    "#ff4e50", // Matching neon red
     CONTROLS_P2,
     false,
-    "english",
+    p2SubjectKey,
   );
 
   // Expose for debugging / UI integration
@@ -280,6 +326,29 @@ function setupKeyboardInput() {
     let key = e.key.toLowerCase();
     if (e.code === "Numpad1") key = "1";
     if (e.code === "Numpad2") key = "2";
+
+    // Handle quiz input separately and prioritize it
+    if (gameState === "QUESTION") {
+      // Prevent movement keys from being tracked during quiz
+      if (Object.prototype.hasOwnProperty.call(keys, key)) delete keys[key];
+
+      // Map WASD and Arrows to 0, 1, 2, 3
+      if (key === "w" || key === "arrowup" || key === "1") {
+        if (typeof handleAnswer === "function") handleAnswer(0);
+        e.preventDefault();
+      } else if (key === "s" || key === "arrowdown" || key === "2") {
+        if (typeof handleAnswer === "function") handleAnswer(1);
+        e.preventDefault();
+      } else if (key === "a" || key === "arrowleft") {
+        if (typeof handleAnswer === "function") handleAnswer(2);
+        e.preventDefault();
+      } else if (key === "d" || key === "arrowright") {
+        if (typeof handleAnswer === "function") handleAnswer(3);
+        e.preventDefault();
+      }
+      return;
+    }
+
     keys[key] = true;
   });
 

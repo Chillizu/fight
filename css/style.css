@@ -92,25 +92,31 @@ canvas {
   color: #fff;
   font-weight: 900;
   font-size: 24px;
-  box-shadow: 3px 3px 0px #000;
+  box-shadow: 4px 4px 0px #000;
   transform: skewX(-5deg);
 }
 
+#p1-info .avatar-box { border-color: #00f2fe; }
+#p2-info .avatar-box { border-color: #ff4e50; }
+
 .player-name {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 900;
   background: #000;
-  padding: 4px 8px;
-  border: 1px solid #555;
+  padding: 4px 12px;
+  border: 2px solid #555;
   text-transform: uppercase;
 }
 
+#p1-info .player-name { border-color: #00f2fe; color: #00f2fe; }
+#p2-info .player-name { border-color: #ff4e50; color: #ff4e50; }
+
 .health-bar-wrapper {
   width: 100%;
-  height: 24px;
-  background: #444;
-  border: 3px solid #fff;
-  box-shadow: 3px 3px 0px #000;
+  height: 28px;
+  background: #222;
+  border: 4px solid #fff;
+  box-shadow: 4px 4px 0px #000;
   position: relative;
   transform: skewX(-20deg); /* Arcade slant */
   overflow: hidden;
@@ -121,21 +127,18 @@ canvas {
 .health-bar-fill {
   height: 100%;
   width: 100%;
-  background: linear-gradient(to left, #ffee00, #ff8800, #ff0000);
   transition: width 0.15s ease-out;
 }
 
-#p2-info .health-bar-fill {
-  background: linear-gradient(to right, #ffee00, #ff8800, #ff0000);
-  float: right; /* Drain from center outward */
-}
+#p1-info .health-bar-fill { background: #00f2fe; }
+#p2-info .health-bar-fill { background: #ff4e50; float: right; }
 
 .skill-bar-wrapper {
   width: 85%;
-  height: 10px;
-  background: #222;
+  height: 12px;
+  background: #111;
   border: 2px solid #aaa;
-  margin-top: 2px;
+  margin-top: 4px;
   transform: skewX(-20deg);
   overflow: hidden;
 }
@@ -144,12 +147,13 @@ canvas {
 
 .skill-bar-fill {
   height: 100%;
-  background: #00d2ff;
+  background: #fff;
   width: 0%;
   transition: width 0.3s ease-out;
 }
 
-#p2-info .skill-bar-fill { float: right; }
+#p1-info .skill-bar-fill { background: #00f2fe; }
+#p2-info .skill-bar-fill { background: #ff4e50; float: right; }
 
 /* Center Timer */
 .timer-container {
@@ -218,11 +222,18 @@ canvas {
 
 
 .combo-text {
-  font-size: 10px;
-  color: #00f2fe;
+  font-size: 14px;
+  font-weight: 900;
+  color: #fff;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 8px;
+  margin-top: 4px;
 }
+
+#p1-info .combo-text { color: #00f2fe; }
+#p2-info .combo-text { color: #ff4e50; }
 
 
 /* Modals: hidden by default */

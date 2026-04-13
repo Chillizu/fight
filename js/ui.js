@@ -29,6 +29,34 @@ function initializeGameUI() {
   p1SkillFill = document.getElementById("p1-skill-fill");
   p2SkillFill = document.getElementById("p2-skill-fill");
 
+  // Sync subject names in the HUD (players may be randomized)
+  try {
+    const p1Name = document.getElementById("p1-name");
+    const p2Name = document.getElementById("p2-name");
+    const p1Avatar = document.getElementById("p1-avatar-text");
+    const p2Avatar = document.getElementById("p2-avatar-text");
+
+    if (typeof player1 !== "undefined" && player1 && p1Name) {
+      const nm = player1.subject ? player1.subject.name : player1.subjectKey;
+      p1Name.textContent = `P1 (${nm || "?"})`;
+    }
+    if (typeof player2 !== "undefined" && player2 && p2Name) {
+      const nm = player2.subject ? player2.subject.name : player2.subjectKey;
+      p2Name.textContent = `P2 (${nm || "?"})`;
+    }
+
+    if (typeof player1 !== "undefined" && player1 && p1Avatar) {
+      const nm = player1.subject ? player1.subject.name : "?";
+      p1Avatar.textContent = nm ? nm[0] : "?";
+    }
+    if (typeof player2 !== "undefined" && player2 && p2Avatar) {
+      const nm = player2.subject ? player2.subject.name : "?";
+      p2Avatar.textContent = nm ? nm[0] : "?";
+    }
+  } catch (e) {
+    // ignore
+  }
+
   lastP1Hits = null;
   lastP2Hits = null;
 
@@ -71,6 +99,16 @@ function updateP1HealthUI(hp) {
       wrapper.classList.remove('shake-ui');
       void wrapper.offsetWidth; // Trigger reflow
       wrapper.classList.add('shake-ui');
+
+      // Spawn UI particles on the health bar
+      if (typeof spawnParticles === "function") {
+        // Health bars are at the top, roughly 20px from left
+        // p1-info is 20px from left, 15px from top
+        // Health bar is roughly at y=50 in screen coords
+        // We can't easily map DOM to Canvas perfectly without getBoundingClientRect,
+        // but we can spawn them near the top left of the canvas as a stylistic choice.
+        spawnParticles(100 + Math.random() * 100, 30, "#00f2fe", 8);
+      }
     }
     p1HealthBar.style.width = percent + "%";
   }
@@ -90,6 +128,11 @@ function updateP2HealthUI(hp) {
       wrapper.classList.remove('shake-ui');
       void wrapper.offsetWidth; // Trigger reflow
       wrapper.classList.add('shake-ui');
+
+      // Spawn UI particles on the health bar
+      if (typeof spawnParticles === "function") {
+        spawnParticles(CANVAS_WIDTH - 150 + Math.random() * 100, 30, "#ff4e50", 8);
+      }
     }
     p2HealthBar.style.width = percent + "%";
   }
@@ -113,10 +156,39 @@ function updateSkillUI(p) {
 
   const hits = p.skillPoints;
   const capped = Math.min(hits, MAX_SKILL);
-  const ready = hits >= MAX_SKILL ? "SUPER READY!!" : "";
+  const ready = hits >= MAX_SKILL ? " - READY!!" : "";
+
+  function getBuffText(player) {
+    if (!player || !player.buffs) return "";
+
+    const labelMap = {
+      giant: "GIANT(变大)",
+      poison: "POISON(中毒)",
+      root: "ROOT(禁锢)",
+      reverse: "REVERSE(反转)",
+      berserk: "BERSERK(狂暴)",
+      invincible: "INVINCIBLE(无敌)",
+      silence: "SILENCE(沉默)",
+    };
+
+    const actives = Object.entries(player.buffs)
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1]);
+
+    if (actives.length === 0) return "";
+
+    const parts = actives.slice(0, 2).map(([k, frames]) => {
+      const sec = Math.ceil(frames / 60);
+      return `${labelMap[k] || k} ${sec}s`;
+    });
+
+    return `BUFF: ${parts.join(" / ")}`;
+  }
+
+  const buffText = getBuffText(p);
 
   if (comboText) {
-    comboText.textContent = `HITS: ${hits} | SKILL: ${capped}/${MAX_SKILL} ${ready}`;
+    comboText.textContent = `${hits} HITS | SKILL: ${capped}/${MAX_SKILL}${ready}${buffText ? " | " + buffText : ""}`;
 
     const lastHits = p.isP1 ? lastP1Hits : lastP2Hits;
     if (lastHits !== null && hits > lastHits) {
@@ -259,7 +331,7 @@ function showQuestionModal(question, casterSubject) {
         </div>
       </div>
       <div id="q-timer-bar">
-        <div id="q-timer-fill"></div>
+        <div id="q-timer-fill" style="width: 100%;"></div>
       </div>
     </div>
   `;
@@ -339,7 +411,9 @@ function showGameOverScreen() {
   hideAllModals();
 
   let p1Win = player1.hp > player2.hp;
-  let winner = p1Win ? "P1 (生物)" : "P2 (化学)";
+  let winner = p1Win
+    ? `P1 (${player1.subject ? player1.subject.name : player1.subjectKey || "?"})`
+    : `P2 (${player2.subject ? player2.subject.name : player2.subjectKey || "?"})`;
 
   let modal = document.createElement("div");
   modal.id = "game-over-modal";

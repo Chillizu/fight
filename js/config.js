@@ -21,15 +21,15 @@ const PLAYER_JUMP_POWER = -15;
 
 // === 攻击常量 ===
 const ATTACK_DURATION = 12;
-const ATTACK_COOLDOWN_NORMAL = 22;
-const ATTACK_COOLDOWN_BERSERK = 10;
+const ATTACK_COOLDOWN_NORMAL = 12;
+const ATTACK_COOLDOWN_BERSERK = 16;
 const ATTACK_HITBOX_WIDTH = 60;
 const ATTACK_HITBOX_HEIGHT = 30;
 const BASE_ATTACK_DAMAGE = 25;
 const DAMAGE_VARIANCE = 5;
 
 // === 特效常量 ===
-const HIT_STOP_FRAMES = 6;
+const HIT_STOP_FRAMES = 3;
 const SCREEN_SHAKE_FRAMES = 8;
 const SKILL_COOLDOWN_FRAMES = 300;
 const POISON_DAMAGE = 22;
@@ -70,6 +70,7 @@ const CONTROLS_P1 = {
   left: "a",
   right: "d",
   up: "w",
+  down: "s",
   attack: "j",
   skill: "k",
 };
@@ -78,6 +79,7 @@ const CONTROLS_P2 = {
   left: "arrowleft",
   right: "arrowright",
   up: "arrowup",
+  down: "arrowdown",
   attack: "1",
   skill: "2",
 };

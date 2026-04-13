@@ -92,16 +92,16 @@ const SUBJECTS = {
     emoji: "📜",
     description: "回血",
     effect: "heal",
-    damage: -300,
+    damage: -200,
   },
   geography: {
     key: "geography",
     name: "地理",
     color: SUBJECT_COLORS.geography,
     emoji: "🌍",
-    description: "陨石",
+    description: "大量伤害",
     effect: "meteor",
-    damage: 50,
+    damage: 90, // Note: damage is doubled in applySkillEffect, so 90 * 2 = 180
   },
   pe: {
     key: "pe",

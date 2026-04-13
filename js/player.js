@@ -17,7 +17,7 @@ class Player {
 
     // === Subject-related ===
     this.subjectKey = subjectKey;
-    this.subject = null;
+    this.subject = typeof getSubject === "function" ? getSubject(subjectKey) : null;
 
     // === Sprite system ===
     this.spriteImg = new Image();
@@ -97,6 +97,9 @@ class Player {
     // === Control configuration ===
     this.controls = controls;
 
+    // === State flags ===
+    this.isBlocking = false;
+
     // === Buff system ===
     this.buffs = {
       giant: 0,
@@ -132,6 +135,16 @@ class Player {
       }
     }
 
+    // Poison logic: deal damage over time
+    if (this.buffs.poison > 0 && this.buffs.poison % POISON_INTERVAL === 0) {
+      if (typeof applyDamage === "function") {
+        applyDamage(this, POISON_DAMAGE);
+        if (typeof spawnParticles === "function") {
+          spawnParticles(this.x + this.width / 2, this.y + this.height / 2, "#4caf50", 5);
+        }
+      }
+    }
+
     // Skill cooldown
     if (this.skillCooldown > 0) {
       this.skillCooldown--;
@@ -151,10 +164,17 @@ class Player {
 
     // Reset velocity
     this.velocityX = 0;
+    this.isBlocking = false;
 
     // Movement restrictions
     let canMove =
       !(this.isGrounded && this.isAttacking) && this.buffs.root === 0;
+
+    // Blocking (Down key)
+    if (this.isGrounded && keys[this.controls.down] && !this.isAttacking) {
+      this.isBlocking = true;
+      canMove = false;
+    }
 
     // Left/right movement
     if (canMove) {
@@ -180,7 +200,8 @@ class Player {
     if (keys[this.controls.attack] && this.attackCooldown === 0 && !this.isAttacking && this.buffs.root === 0) {
       this.isAttacking = true;
       this.attackTimer = this.attackDuration;
-      this.attackCooldown = ATTACK_COOLDOWN_NORMAL;
+      // berserk adds to cooldown, making it slower (30 + 12 = 42 for normal 60fps)
+      this.attackCooldown = this.buffs.berserk > 0 ? ATTACK_COOLDOWN_BERSERK : ATTACK_COOLDOWN_NORMAL;
     }
 
     if (this.isAttacking) {
@@ -263,17 +284,36 @@ class Player {
     const w = this.width;
     const h = this.height;
 
+    // Glitch effect based on time
+    const time = Date.now() / 150;
+    const glitchX = Math.sin(time * 2) * 3;
+    const glitchW = w + Math.cos(time * 3) * 6;
+
     // Glowing rect
     ctx.strokeStyle = this.isP1 ? "#00f2fe" : "#ff4e50";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.strokeRect(x, y, w, h);
+    ctx.lineWidth = 3;
+
+    // Shield-like pulsing during block
+    if (this.isBlocking) {
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.4 + Math.sin(time * 5) * 0.2;
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fillRect(x - 5, y - 5, w + 10, h + 10);
+      ctx.globalAlpha = 1.0;
+    } else {
+      ctx.setLineDash([8, 4]);
+      ctx.lineDashOffset = -time * 10;
+    }
+
+    ctx.strokeRect(x + glitchX, y, glitchW, h);
 
     // [NULL] Text
     ctx.fillStyle = ctx.strokeStyle;
-    ctx.font = "bold 14px 'Fira Sans'";
+    ctx.font = "900 22px 'Fira Sans'";
     ctx.textAlign = "center";
-    ctx.fillText("[[NULL]]", x + w / 2, y + h / 2 + 5);
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.fillText("[[NULL]]", x + w / 2, y + h / 2 + 8);
 
     ctx.restore();
   }
@@ -322,6 +362,14 @@ class Player {
 
     ctx.imageSmoothingEnabled = false; // PIXEL ART VIBE
 
+    // Visual feedback for blocking
+    if (this.isBlocking) {
+      ctx.globalAlpha = 0.7;
+      // Add a subtle glow/shield effect
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = this.isP1 ? "#00f2fe" : "#ff4e50";
+    }
+
     ctx.drawImage(
       this.spriteImg,
       frame.sx, frame.sy, frame.sw, frame.sh,
@@ -330,7 +378,7 @@ class Player {
 
     ctx.restore();
 
-    // Update frame counter
-    this.frameIndex += 0.2;
+    // Update frame counter (faster animation = snappier feel)
+    this.frameIndex += 0.3;
   }
 }

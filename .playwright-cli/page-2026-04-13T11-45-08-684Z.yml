@@ -1,0 +1,23 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: 语
+          - generic [ref=e8]: P1 (语文)
+        - generic [ref=e13]: "13 HITS | SKILL: 13/13 - READY!!"
+      - generic [ref=e14]:
+        - generic [ref=e15]: "59"
+        - generic [ref=e16]: VS
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: 体
+          - generic [ref=e20]: P2 (体育)
+        - generic [ref=e25]: "3 HITS | SKILL: 3/13"
+  - generic [ref=e26]:
+    - generic [ref=e27]: "P1: WASD 移 J 攻 K 技 | P2: ↑↓←→ 移 1 攻 2 技"
+    - generic [ref=e28]:
+      - button "查看AI贴图规范" [ref=e29] [cursor=pointer]
+      - button "📸 AI生成角色" [ref=e30] [cursor=pointer]
+      - generic [ref=e31] [cursor=pointer]: 加载P1雪碧图
+      - generic [ref=e32] [cursor=pointer]: 加载P2雪碧图

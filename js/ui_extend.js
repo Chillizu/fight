@@ -289,25 +289,52 @@ function removeBackgroundTransparent(canvas, bg = { r: 255, g: 255, b: 255 }, th
 }
 
 
-// 题库
-const QUESTIONS = [
-  { q: "DNA的中文名称是？", a: ["脱氧核糖核酸", "核糖核酸", "蛋白质", "氨基酸"], ans: 0 },
-  { q: "水的化学式是？", a: ["H2O", "CO2", "NaCl", "O2"], ans: 0 },
-  { q: "牛顿第一定律又称？", a: ["惯性定律", "作用反作用定律", "万有引力定律", "动量守恒定律"], ans: 0 },
-  { q: "\"床前明月光\"的作者是？", a: ["李白", "杜甫", "白居易", "王维"], ans: 0 },
-  { q: "2的平方根约等于？", a: ["1.41", "1.73", "2.00", "1.5"], ans: 0 },
-  { q: "\"hello\"用中文是？", a: ["你好", "再见", "谢谢", "对不起"], ans: 0 },
-  // 可添加更多题目
-];
+// =============================================================================
+// Quiz System (Decoupled & Subject-based)
+// =============================================================================
 
 // 当前正在答的题（进入 QUESTION 状态时设置，答题结束清空）
 let currentQuestion = null;
 
+// 题库（从 questions.json 加载）
+let QUESTION_BANK = {};
+
+/**
+ * 从 JSON 加载题库
+ */
+async function loadQuestions() {
+  try {
+    const response = await fetch("assets/data/questions.json");
+    QUESTION_BANK = await response.json();
+    console.log("题库加载成功:", Object.keys(QUESTION_BANK));
+  } catch (e) {
+    console.error("题库加载失败，使用备用题目:", e);
+    QUESTION_BANK = {
+      default: [
+        { q: "DNA的中文名称是？", a: ["脱氧核糖核酸", "核糖核酸", "蛋白质", "氨基酸"], ans: 0 },
+        { q: "水的化学式是？", a: ["H2O", "CO2", "NaCl", "O2"], ans: 0 }
+      ]
+    };
+  }
+}
+
+// 立即加载
+loadQuestions();
+
 /**
  * 获取随机题目
+ * @param {string} subjectKey - 学科标识
  */
-function getRandomQuestion() {
-  return QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+function getRandomQuestion(subjectKey) {
+  const bank = QUESTION_BANK[subjectKey] || QUESTION_BANK["default"] || [];
+  if (bank.length === 0) {
+    // Fallback if specific bank is empty
+    const allKeys = Object.keys(QUESTION_BANK);
+    const randomKey = allKeys[Math.floor(Math.random() * allKeys.length)];
+    const fallbackBank = QUESTION_BANK[randomKey] || [];
+    return fallbackBank[Math.floor(Math.random() * fallbackBank.length)];
+  }
+  return bank[Math.floor(Math.random() * bank.length)];
 }
 
 /**
@@ -327,12 +354,23 @@ function handleAnswer(answer) {
 
   const correct = answer === question.ans;
 
+  // Timeout case: answer = -1 treated as wrong
+  const isTimeout = answer === -1;
+
   if (correct) {
     // 答对，释放技能
     applySkillEffect(qCaster, qTarget);
   } else {
-    // 答错，扣血
+    // 答错/超时，扣血
     applyDamage(qCaster, SKILL_FAIL_PENALTY);
+    if (typeof createFloatingText === "function") {
+      createFloatingText(
+        qCaster.x + qCaster.width / 2,
+        qCaster.y - 40,
+        isTimeout ? "TIME UP! (超时扣血)" : "SKILL FAILED! (答错扣血)",
+        "#ff4e50",
+      );
+    }
     // 对手获得连击
     if (qTarget) {
       qTarget.skillPoints += SKILL_GAIN_ON_FAIL;
@@ -358,8 +396,11 @@ function triggerQuestionMode(caster) {
   qTimer = Q_MAX_TIME;
 
   // 显示题目
-  currentQuestion = getRandomQuestion();
-  showQuestionModal(currentQuestion, caster.subject ? caster.subject.name : "学科");
+  currentQuestion = getRandomQuestion(caster.subjectKey);
+  const subjectLabel = caster.subject
+    ? `${caster.subject.name}「${caster.subject.description || ""}」`
+    : "学科";
+  showQuestionModal(currentQuestion, subjectLabel);
 }
 
 /**
@@ -369,47 +410,128 @@ function triggerQuestionMode(caster) {
  */
 function applySkillEffect(caster, target) {
   if (!caster.subject) return;
-  
+
   let effect = caster.subject.effect;
   let damage = caster.subject.damage || 0;
-  
+  const color = caster.subject.color;
+
   // 造成伤害
   if (damage > 0) {
     applyDamage(target, damage * 2); // 技能伤害翻倍
   }
-  
-  // 应用Buff
+
+  // 应用Buff + 独特视觉特效
   switch (effect) {
     case "giant":
       caster.setBuff("giant", BUFF_DURATION.giant);
+      if(typeof createFloatingText === "function") createFloatingText(caster.x + caster.width/2, caster.y - 40, "GIANT! (变大)", color);
+      // 向上喷射绿色粒子
+      for(let i=0; i<3; i++) {
+        if(typeof spawnParticles === "function") spawnParticles(caster.x + caster.width/2, caster.y, color, 20);
+      }
       break;
     case "poison":
       target.setBuff("poison", BUFF_DURATION.poison);
+      if(typeof createFloatingText === "function") createFloatingText(target.x + target.width/2, target.y - 40, "POISONED! (每秒扣血)", color);
+      // 紫色毒气螺旋
+      for(let i=0; i<2; i++) {
+        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + Math.cos(i*Math.PI)*20, target.y + target.height/2, color, 25);
+      }
       break;
     case "root":
       target.setBuff("root", BUFF_DURATION.root);
+      if(typeof createFloatingText === "function") createFloatingText(target.x + target.width/2, target.y - 40, "ROOTED! (禁锢)", color);
+      // 蓝色冰冻效果（向下）
+      for(let i=0; i<4; i++) {
+        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + (Math.random()-0.5)*40, target.y + target.height, color, 15);
+      }
       break;
     case "reverse":
       target.setBuff("reverse", BUFF_DURATION.reverse);
+      if(typeof createFloatingText === "function") createFloatingText(target.x + target.width/2, target.y - 40, "CONTROLS REVERSED! (反转)", color);
+      // 红色旋转特效
+      for(let i=0; i<8; i++) {
+        const angle = (i/8) * Math.PI * 2;
+        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + Math.cos(angle)*30, target.y + target.height/2 + Math.sin(angle)*30, color, 12);
+      }
       break;
     case "berserk":
       caster.setBuff("berserk", BUFF_DURATION.berserk);
+      if(typeof createFloatingText === "function") createFloatingText(caster.x + caster.width/2, caster.y - 40, "BERSERK! (+8攻 减攻速)", color);
+      // 橙色爆炸环
+      for(let i=0; i<6; i++) {
+        const angle = (i/6) * Math.PI * 2;
+        if(typeof spawnParticles === "function") spawnParticles(caster.x + caster.width/2 + Math.cos(angle)*25, caster.y + Math.sin(angle)*25, color, 30);
+      }
       break;
     case "invincible":
       caster.setBuff("invincible", BUFF_DURATION.invincible);
+      if(typeof createFloatingText === "function") createFloatingText(caster.x + caster.width/2, caster.y - 40, "INVINCIBLE! (无敌)", color);
+      // 青色护盾光环
+      for(let i=0; i<12; i++) {
+        const angle = (i/12) * Math.PI * 2;
+        if(typeof spawnParticles === "function") spawnParticles(caster.x + caster.width/2 + Math.cos(angle)*35, caster.y + caster.height/2 + Math.sin(angle)*35, color, 8);
+      }
       break;
     case "silence":
       target.setBuff("silence", BUFF_DURATION.silence);
+      if(typeof createFloatingText === "function") createFloatingText(target.x + target.width/2, target.y - 40, "SILENCED! (-5攻 无法放技能)", color);
+      // 灰色禁止符号粒子
+      for(let i=0; i<5; i++) {
+        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + (Math.random()-0.5)*30, target.y + (Math.random()-0.5)*30, color, 18);
+      }
       break;
     case "heal":
-      caster.hp = Math.min(caster.hp + 300, MAX_HP);
+      caster.hp = Math.min(caster.hp + 200, MAX_HP);
       updateHealthUI();
+      if(typeof createFloatingText === "function") createFloatingText(caster.x + caster.width/2, caster.y - 40, "+200 HP!", color);
+      // 棕色治疗光芒（向上）
+      for(let i=0; i<5; i++) {
+        if(typeof spawnParticles === "function") spawnParticles(caster.x + caster.width/2 + (Math.random()-0.5)*20, caster.y - i*15, color, 20);
+      }
       break;
-    // 可添加更多效果
+    case "meteor":
+      if(typeof createFloatingText === "function") createFloatingText(target.x + target.width/2, target.y - 40, "METEOR! (陨石)", color);
+      // 浅绿色陨石雨
+      for(let i=0; i<8; i++) {
+        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + (Math.random()-0.5)*60, target.y - 50 - Math.random()*40, color, 35);
+      }
+      break;
+    case "speed":
+      caster.setBuff("speed", BUFF_DURATION.berserk);
+      if(typeof createFloatingText === "function") createFloatingText(caster.x + caster.width/2, caster.y - 40, "SPEED! (加速)", color);
+      // 黄色速度线
+      for(let i=0; i<6; i++) {
+        if(typeof spawnParticles === "function") spawnParticles(caster.x + caster.width/2 + i*10, caster.y + caster.height/2, color, 25);
+      }
+      break;
+    case "hack":
+      if(typeof createFloatingText === "function") createFloatingText(target.x + target.width/2, target.y - 40, "HACKED! (黑客)", color);
+      // 粉色数字雨
+      for(let i=0; i<10; i++) {
+        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + (Math.random()-0.5)*50, target.y + (Math.random()-0.5)*50, color, 20);
+      }
+      break;
+    case "stun":
+      target.setBuff("root", BUFF_DURATION.root);
+      if(typeof createFloatingText === "function") createFloatingText(target.x + target.width/2, target.y - 40, "STUNNED! (眩晕)", color);
+      // 紫色星星旋转
+      for(let i=0; i<8; i++) {
+        const angle = (i/8) * Math.PI * 2;
+        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + Math.cos(angle)*25, target.y + Math.sin(angle)*25, color, 15);
+      }
+      break;
+    case "illusion":
+      if(typeof createFloatingText === "function") createFloatingText(target.x + target.width/2, target.y - 40, "ILLUSION! (幻象)", color);
+      // 深橙色闪烁幻象
+      for(let i=0; i<12; i++) {
+        if(typeof spawnParticles === "function") spawnParticles(target.x + target.width/2 + (Math.random()-0.5)*40, target.y + (Math.random()-0.5)*40, color, 12);
+      }
+      break;
   }
-  
-  // 技能特效
-  spawnHeavyParticles(target.x + target.width / 2, target.y, caster.subject.color, 30);
+
+  // 基础技能特效
+  spawnHeavyParticles(target.x + target.width / 2, target.y, color, 30);
   screenShakeTime = SCREEN_SHAKE_FRAMES * 2;
 }
 
