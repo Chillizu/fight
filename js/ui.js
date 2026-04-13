@@ -5,9 +5,17 @@
 
 // DOM元素
 let p1HealthBar, p2HealthBar, timerDisplay, p1ComboText, p2ComboText;
+let p1SkillFill, p2SkillFill;
 
-// 背景图
+let lastP1Hits = null;
+let lastP2Hits = null;
+
+// Spec modal pause state
+let preSpecGameState = null;
+
+// 背景图（可选）
 let bgImg = new Image();
+let hasCustomBackground = false;
 
 /**
  * 初始化游戏UI
@@ -18,12 +26,35 @@ function initializeGameUI() {
   timerDisplay = document.getElementById("timer");
   p1ComboText = document.getElementById("p1-combo-text");
   p2ComboText = document.getElementById("p2-combo-text");
+  p1SkillFill = document.getElementById("p1-skill-fill");
+  p2SkillFill = document.getElementById("p2-skill-fill");
 
-  // 加载背景
-  bgImg.src = "assets/backgrounds/bg_default.jpg";
-  bgImg.onerror = function() {
+  lastP1Hits = null;
+  lastP2Hits = null;
+
+  // 加载背景（硬加载 background.png；加载失败则回退到默认纯色背景）
+  const bgSrc = typeof DEFAULT_BG_SRC === "string" ? DEFAULT_BG_SRC : "";
+  bgImg.onload = function () {
+    hasCustomBackground = true;
+  };
+  bgImg.onerror = function () {
+    hasCustomBackground = false;
     console.log("背景加载失败，使用默认背景");
   };
+  if (bgSrc) {
+    bgImg.src = bgSrc;
+  }
+}
+
+/**
+ * 供 game.js 调用的背景绘制（如果背景未加载成功，会返回 false）
+ */
+function drawCustomBackground(ctx) {
+  if (!hasCustomBackground) return false;
+  if (!bgImg.complete || bgImg.naturalWidth <= 0) return false;
+
+  ctx.drawImage(bgImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  return true;
 }
 
 /**
@@ -33,6 +64,14 @@ function initializeGameUI() {
 function updateP1HealthUI(hp) {
   if (p1HealthBar) {
     let percent = (hp / MAX_HP) * 100;
+    let currentWidth = parseFloat(p1HealthBar.style.width) || 100;
+
+    if (currentWidth > percent) { // Damage taken
+      let wrapper = p1HealthBar.parentElement;
+      wrapper.classList.remove('shake-ui');
+      void wrapper.offsetWidth; // Trigger reflow
+      wrapper.classList.add('shake-ui');
+    }
     p1HealthBar.style.width = percent + "%";
   }
 }
@@ -44,6 +83,14 @@ function updateP1HealthUI(hp) {
 function updateP2HealthUI(hp) {
   if (p2HealthBar) {
     let percent = (hp / MAX_HP) * 100;
+    let currentWidth = parseFloat(p2HealthBar.style.width) || 100;
+
+    if (currentWidth > percent) { // Damage taken
+      let wrapper = p2HealthBar.parentElement;
+      wrapper.classList.remove('shake-ui');
+      void wrapper.offsetWidth; // Trigger reflow
+      wrapper.classList.add('shake-ui');
+    }
     p2HealthBar.style.width = percent + "%";
   }
 }
@@ -62,11 +109,68 @@ function updateHealthUI() {
  */
 function updateSkillUI(p) {
   let comboText = p.isP1 ? p1ComboText : p2ComboText;
+  let skillFill = p.isP1 ? p1SkillFill : p2SkillFill;
+
+  const hits = p.skillPoints;
+  const capped = Math.min(hits, MAX_SKILL);
+  const ready = hits >= MAX_SKILL ? "SUPER READY!!" : "";
+
   if (comboText) {
-    let hits = p.skillPoints;
-    let ready = hits >= MAX_SKILL ? "SUPER READY!!" : "";
-    comboText.textContent = `HITS: ${hits} | SKILL: ${Math.min(hits, MAX_SKILL)}/13 ${ready}`;
+    comboText.textContent = `HITS: ${hits} | SKILL: ${capped}/${MAX_SKILL} ${ready}`;
+
+    const lastHits = p.isP1 ? lastP1Hits : lastP2Hits;
+    if (lastHits !== null && hits > lastHits) {
+      comboText.classList.remove("pop-anim");
+      void comboText.offsetWidth;
+      comboText.classList.add("pop-anim");
+    }
+
+    if (p.isP1) lastP1Hits = hits;
+    else lastP2Hits = hits;
   }
+
+  if (skillFill) {
+    const pct = (capped / MAX_SKILL) * 100;
+    skillFill.style.width = pct + "%";
+  }
+}
+
+/**
+ * 开关 AI 生成面板（兼容 index.html 的 onclick）
+ */
+function toggleAIGenerationPanel() {
+  const existing = document.getElementById("ai-panel");
+  if (existing) {
+    existing.remove();
+    const canvas = document.getElementById("gameCanvas");
+    if (canvas) canvas.focus();
+    return;
+  }
+
+  createAIGenerationPanel();
+}
+
+/**
+ * 处理上传自定义雪碧图（兼容 index.html 的 onchange）
+ */
+function loadCustomAsset(event, who) {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const dataUrl = e?.target?.result;
+    if (!dataUrl) return;
+
+    const isP1 = who === "p1";
+    const player = isP1 ? player1 : player2;
+    if (!player) return;
+
+    // Reuse the player's sprite image element so onload triggers sprite analysis.
+    player.spriteImg.src = dataUrl;
+  };
+
+  reader.readAsDataURL(file);
 }
 
 /**
@@ -79,28 +183,37 @@ function createAIGenerationPanel() {
   let panel = document.createElement("div");
   panel.id = "ai-panel";
   panel.innerHTML = `
-    <h3>AI角色生成</h3>
-    <input type="file" id="photo-input" accept="image/*">
-    <input type="text" id="char-desc" placeholder="角色描述（可选）">
-    <button id="generate-btn">生成</button>
-    <div id="generate-status"></div>
+    <div class="modal-content">
+      <h3 style="margin-bottom: 20px; font-size: 18px;">📸 AI角色生成</h3>
+      <div style="display: flex; flex-direction: column; gap: 15px; align-items: stretch;">
+        <label class="upload-btn" style="justify-content: center;">
+          选择参考照片 <input type="file" id="photo-input" accept="image/*">
+        </label>
+        <input type="text" id="char-desc" placeholder="输入角色描述 (例如: 穿校服的剑士)"
+          style="background: rgba(0,0,0,0.5); border: 1px solid #00f2fe; color: #fff; padding: 10px; border-radius: 8px; font-family: inherit; font-size: 10px;">
+        <button id="generate-btn" class="upload-btn" style="background: #9c27b0; border-color: #7b1fa2; justify-content: center;">开始生成</button>
+        <div id="generate-status" style="font-size: 10px; color: #00f2fe;"></div>
+      </div>
+      <button onclick="toggleAIGenerationPanel()" style="margin-top: 20px; background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 10px; font-family: inherit;">[ 取消 ]</button>
+    </div>
   `;
-  panel.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;padding:20px;border-radius:8px;color:#fff;";
-  
+  panel.style.cssText = ""; // Clear inline styles to use CSS classes
+  panel.className = "modal show";
+
   let gameContainer = document.getElementById("game-container");
   if (gameContainer) {
     gameContainer.appendChild(panel);
-    
+
     // 绑定事件
     let photoInput = document.getElementById("photo-input");
     let generateBtn = document.getElementById("generate-btn");
-    
+
     if (generateBtn && photoInput) {
-      generateBtn.onclick = function() {
+      generateBtn.onclick = function () {
         let file = photoInput.files[0];
         if (file) {
           let reader = new FileReader();
-          reader.onload = function(e) {
+          reader.onload = function () {
             let status = document.getElementById("generate-status");
             if (status) status.textContent = "正在生成...";
             // TODO: 调用AI生成
@@ -118,21 +231,39 @@ function createAIGenerationPanel() {
  * @param {string} casterSubject - 释放者学科
  */
 function showQuestionModal(question, casterSubject) {
-  // 创建答题弹窗
+  hideAllModals(); // Ensure no duplicates
+
   let modal = document.createElement("div");
   modal.id = "question-modal";
-  modal.style.cssText = "position:absolute;top:20%;left:50%;transform:translateX(-50%);background:#2a2a4e;padding:30px;border-radius:12px;color:#fff;text-align:center;min-width:400px;";
+  modal.className = "modal show";
   modal.innerHTML = `
-    <h2>${casterSubject} 大招答题</h2>
-    <p style="font-size:24px;margin:20px 0;">${question.q}</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <button class="answer-btn" onclick="handleAnswer(0)">A. ${question.a[0]}</button>
-      <button class="answer-btn" onclick="handleAnswer(1)">B. ${question.a[1]}</button>
-      <button class="answer-btn" onclick="handleAnswer(2)">C. ${question.a[2]}</button>
-      <button class="answer-btn" onclick="handleAnswer(3)">D. ${question.a[3]}</button>
+    <div class="modal-content">
+      <div id="q-title">🔥 ${casterSubject} 绝招答题 🔥</div>
+      <div id="q-text">${question.q}</div>
+      <div class="q-options-grid">
+        <div class="q-option" onclick="handleAnswer(0)">
+          <span class="q-key">W</span>
+          <span>${question.a[0]}</span>
+        </div>
+        <div class="q-option" onclick="handleAnswer(1)">
+          <span class="q-key">S</span>
+          <span>${question.a[1]}</span>
+        </div>
+        <div class="q-option" onclick="handleAnswer(2)">
+          <span class="q-key">A</span>
+          <span>${question.a[2]}</span>
+        </div>
+        <div class="q-option" onclick="handleAnswer(3)">
+          <span class="q-key">D</span>
+          <span>${question.a[3]}</span>
+        </div>
+      </div>
+      <div id="q-timer-bar">
+        <div id="q-timer-fill"></div>
+      </div>
     </div>
   `;
-  
+
   let gameContainer = document.getElementById("game-container");
   if (gameContainer) {
     gameContainer.appendChild(modal);
@@ -143,31 +274,97 @@ function showQuestionModal(question, casterSubject) {
  * 隐藏所有弹窗
  */
 function hideAllModals() {
+  const spec = document.getElementById("spec-modal");
+  if (spec) spec.classList.remove("show");
+
   let modals = document.querySelectorAll("#question-modal, #ai-panel, #game-over-modal");
-  modals.forEach(function(m) {
+  modals.forEach(function (m) {
     m.remove();
   });
+}
+
+/**
+ * 打开 AI 贴图规范弹窗
+ * - 进入“暂停”态：冻结战斗与计时
+ * - 关闭后恢复之前的游戏状态（通常是 PLAYING）
+ */
+function openSpecModal() {
+  const spec = document.getElementById("spec-modal");
+  if (!spec) return;
+
+  // 如果已经打开就不重复处理
+  if (spec.classList.contains("show")) return;
+
+  // 记录并暂停
+  if (typeof gameState !== "undefined") {
+    preSpecGameState = gameState;
+    gameState = "PAUSED";
+  }
+
+  spec.classList.add("show");
+
+  // 清空按键状态，避免松手事件丢失导致“粘键”
+  if (typeof window.clearKeys === "function") window.clearKeys();
+
+  // 让 canvas 失焦，避免键盘操作继续触发移动/攻击
+  const canvas = document.getElementById("gameCanvas");
+  if (canvas) canvas.blur();
+}
+
+/**
+ * 关闭 AI 贴图规范弹窗
+ */
+function closeSpecModal() {
+  const spec = document.getElementById("spec-modal");
+  if (!spec) return;
+
+  spec.classList.remove("show");
+
+  if (typeof gameState !== "undefined") {
+    gameState = preSpecGameState || "PLAYING";
+    preSpecGameState = null;
+  }
+
+  // 清空按键状态，避免关闭瞬间产生输入串扰
+  if (typeof window.clearKeys === "function") window.clearKeys();
+
+  const canvas = document.getElementById("gameCanvas");
+  if (canvas) canvas.focus();
 }
 
 /**
  * 显示游戏结束画面
  */
 function showGameOverScreen() {
+  hideAllModals();
+
   let p1Win = player1.hp > player2.hp;
-  let winner = p1Win ? "P1" : "P2";
-  
+  let winner = p1Win ? "P1 (生物)" : "P2 (化学)";
+
   let modal = document.createElement("div");
   modal.id = "game-over-modal";
-  modal.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;padding:40px;border-radius:12px;color:#fff;text-align:center;";
+  modal.className = "modal show";
   modal.innerHTML = `
-    <h1 style="font-size:48px;color:#ffeb3b;">游戏结束</h1>
-    <p style="font-size:32px;margin:20px 0;">${winner} 获胜！</p>
-    <p>P1: ${player1.hp} HP | P2: ${player2.hp} HP</p>
-    <button onclick="location.reload()" style="margin-top:20px;padding:10px 30px;font-size:18px;cursor:pointer;">再来一局</button>
+    <div class="modal-content" style="border-color: #ffeb3b; box-shadow: 0 0 50px rgba(255, 235, 59, 0.4);">
+      <h1 style="font-size: 40px; color: #ffeb3b; margin-bottom: 20px;">K.O.</h1>
+      <p style="font-size: 18px; margin-bottom: 20px;">${winner} 获得胜利!</p>
+      <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 30px;">
+        <div style="text-align: center;">
+          <div style="font-size: 10px; color: #aaa;">P1 HP</div>
+          <div style="font-size: 18px; color: #ff4e50;">${Math.round(player1.hp)}</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 10px; color: #aaa;">P2 HP</div>
+          <div style="font-size: 18px; color: #4facfe;">${Math.round(player2.hp)}</div>
+        </div>
+      </div>
+      <button class="upload-btn" onclick="location.reload()" style="background: #ffeb3b; color: #000; border: none; padding: 15px 40px;">再次挑战</button>
+    </div>
   `;
-  
+
   let gameContainer = document.getElementById("game-container");
   if (gameContainer) {
     gameContainer.appendChild(modal);
   }
 }
+

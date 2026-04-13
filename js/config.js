@@ -92,6 +92,12 @@ const SPRITE_ANIM_ROWS = {
   attack: 2,
 };
 
+// === 默认资源（可选；为空则不会请求，避免 404）===
+// 默认背景：硬加载根目录的 background.png（存在则自动显示）
+const DEFAULT_BG_SRC = "background.png";
+const DEFAULT_SPRITE_P1_SRC = "";
+const DEFAULT_SPRITE_P2_SRC = "";
+
 // === 智谱 AI (BigModel) 配置 ===
 const BIGMODEL_CONFIG = {
   API_KEY: "", // 从 https://bigmodel.cn/usercenter/apikeys 获取

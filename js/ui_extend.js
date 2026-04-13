@@ -1,7 +1,275 @@
 /**
- * AI集成与背景移除
- * LMStudio/BigModel API 集成、智能背景移除
+ * AI集成与图像处理
+ * - LMStudio/BigModel API（实验性）
+ * - Sprite sheet 标准化与动态裁剪（重点）
+ * - 背景移除（可选）
  */
+
+// =============================================================================
+// Sprite sheet analysis + robust grid slicing
+// =============================================================================
+
+/**
+ * Analyze a sprite sheet and compute per-cell crop rectangles.
+ *
+ * Strategy:
+ * 1. Fixed-grid division (Strictly 4x3)
+ * 2. Find content bounds within EACH grid cell independently
+ * 3. Use the cell's center for drawing to avoid segmentation
+ * 4. Apply a safe "max-crop" per row to keep size uniform
+ */
+function analyzeSpriteSheet(img, opts = {}) {
+  const cols = opts.cols ?? 4;
+  const rows = opts.rows ?? 3;
+  const bgTol = opts.bgTol ?? 45;
+  const minAlpha = opts.minAlpha ?? 10;
+  const pad = opts.pad ?? 3;
+
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const bgColor = opts.bg || _sampleBackgroundColor(data, w, h);
+
+  const cellW = w / cols;
+  const cellH = h / rows;
+
+  // First pass: scan each cell, capture raw content bounds and row-level union (in relative coords).
+  const raw = [];
+  const rowBoxesRel = Array.from({ length: rows }, () => ({
+    left: Infinity,
+    right: -Infinity,
+    top: Infinity,
+    bottom: -Infinity,
+    has: false,
+  }));
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x0 = Math.floor(c * cellW);
+      const y0 = Math.floor(r * cellH);
+      const x1 = Math.floor((c + 1) * cellW);
+      const y1 = Math.floor((r + 1) * cellH);
+
+      const cw = Math.max(1, x1 - x0);
+      const ch = Math.max(1, y1 - y0);
+
+      const b = _findContentBoundsInRect(
+        data,
+        w,
+        h,
+        x0,
+        y0,
+        x1,
+        y1,
+        bgColor,
+        bgTol,
+        minAlpha,
+      );
+
+      if (!b) {
+        raw.push({ row: r, col: c, x0, y0, x1, y1, cw, ch, empty: true, bounds: null });
+        continue;
+      }
+
+      const rel = {
+        left: (b.left - x0) / cw,
+        right: (b.right - x0) / cw,
+        top: (b.top - y0) / ch,
+        bottom: (b.bottom - y0) / ch,
+      };
+
+      const rb = rowBoxesRel[r];
+      rb.has = true;
+      if (rel.left < rb.left) rb.left = rel.left;
+      if (rel.right > rb.right) rb.right = rel.right;
+      if (rel.top < rb.top) rb.top = rel.top;
+      if (rel.bottom > rb.bottom) rb.bottom = rel.bottom;
+
+      raw.push({ row: r, col: c, x0, y0, x1, y1, cw, ch, empty: false, bounds: b, rel });
+    }
+  }
+
+  // Second pass: build normalized per-row crop boxes, then apply to each cell.
+  const rowBoxes = rowBoxesRel.map((rb) => {
+    if (!rb.has) {
+      return { left: 0, top: 0, right: 1, bottom: 1, empty: true };
+    }
+
+    // Clamp to [0,1] before padding.
+    const left = Math.max(0, Math.min(1, rb.left));
+    const right = Math.max(0, Math.min(1, rb.right));
+    const top = Math.max(0, Math.min(1, rb.top));
+    const bottom = Math.max(0, Math.min(1, rb.bottom));
+
+    return { left, right, top, bottom, empty: false };
+  });
+
+  const frames = raw.map((rf) => {
+    const rb = rowBoxes[rf.row];
+
+    const leftPx = clampInt(Math.floor(rb.left * rf.cw) - pad, 0, rf.cw - 1);
+    const topPx = clampInt(Math.floor(rb.top * rf.ch) - pad, 0, rf.ch - 1);
+
+    const rightPx = clampInt(Math.ceil(rb.right * rf.cw) + pad, leftPx + 1, rf.cw);
+    const bottomPx = clampInt(Math.ceil(rb.bottom * rf.ch) + pad, topPx + 1, rf.ch);
+
+    const sw = Math.max(1, rightPx - leftPx);
+    const sh = Math.max(1, bottomPx - topPx);
+
+    return {
+      row: rf.row,
+      col: rf.col,
+      sx: rf.x0 + leftPx,
+      sy: rf.y0 + topPx,
+      sw,
+      sh,
+      empty: rf.empty,
+    };
+  });
+
+  return { cols, rows, width: w, height: h, bgColor, frames };
+}
+
+/** Get frame crop rect from spriteMeta and player state. */
+function getSpriteFrame(spriteMeta, state) {
+  if (!spriteMeta || !spriteMeta.frames || spriteMeta.frames.length === 0) return null;
+
+  let row = 0;
+  if (state.isAttacking) row = 2;
+  else if (Math.abs(state.velocityX) > 0) row = 1;
+
+  const col = Math.floor(state.frameIndex) % 4;
+  const idx = row * 4 + col;
+  return spriteMeta.frames[idx] || null;
+}
+
+function clampInt(v, min, max) {
+  v = Math.round(v);
+  if (v < min) return min;
+  if (v > max) return max;
+  return v;
+}
+
+function _trimmedMean(arr, trimPct) {
+  if (!arr || arr.length === 0) return null;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const n = sorted.length;
+  const k = Math.floor(n * trimPct);
+  const slice = sorted.slice(k, Math.max(k + 1, n - k));
+  let sum = 0;
+  for (const v of slice) sum += v;
+  return sum / slice.length;
+}
+
+function _sampleBackgroundColor(data, w, h) {
+  const points = [
+    { x: 2, y: 2 },
+    { x: w - 3, y: 2 },
+    { x: 2, y: h - 3 },
+    { x: w - 3, y: h - 3 },
+  ];
+
+  const samples = [];
+  for (const p of points) {
+    let r = 0, g = 0, b = 0, c = 0;
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        const x = Math.min(w - 1, Math.max(0, p.x + dx));
+        const y = Math.min(h - 1, Math.max(0, p.y + dy));
+        const i = (y * w + x) * 4;
+        r += data[i];
+        g += data[i + 1];
+        b += data[i + 2];
+        c++;
+      }
+    }
+    samples.push({ r: r / c, g: g / c, b: b / c });
+  }
+
+  let R = 0, G = 0, B = 0;
+  for (const s of samples) {
+    R += s.r;
+    G += s.g;
+    B += s.b;
+  }
+
+  return { r: R / samples.length, g: G / samples.length, b: B / samples.length };
+}
+
+function _colorDistSq(r, g, b, bg) {
+  const dr = r - bg.r;
+  const dg = g - bg.g;
+  const db = b - bg.b;
+  return dr * dr + dg * dg + db * db;
+}
+
+function _findContentBoundsInRect(data, w, h, x0, y0, x1, y1, bg, bgTol, minAlpha) {
+  const tolSq = bgTol * bgTol;
+  let left = x1, right = x0, top = y1, bottom = y0;
+  let found = false;
+
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const i = (y * w + x) * 4;
+      const a = data[i + 3];
+      if (a < minAlpha) continue;
+
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      if (_colorDistSq(r, g, b, bg) <= tolSq) continue;
+
+      found = true;
+      if (x < left) left = x;
+      if (x > right) right = x;
+      if (y < top) top = y;
+      if (y > bottom) bottom = y;
+    }
+  }
+
+  if (!found) return null;
+  return { left, right: right + 1, top, bottom: bottom + 1 };
+}
+
+/**
+ * 移除背景（改进版：边缘平滑与智能填充）
+ * 用于处理 AI 生成图片的白底或噪点背景。
+ */
+function removeBackgroundTransparent(canvas, bg = { r: 255, g: 255, b: 255 }, threshold = 50) {
+  const ctx = canvas.getContext("2d");
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+  const tolSq = threshold * threshold;
+
+  // 1. First pass: strict color removal
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const distSq = (r - bg.r) ** 2 + (g - bg.g) ** 2 + (b - bg.b) ** 2;
+
+    if (distSq < tolSq) {
+      data[i + 3] = 0;
+    } else if (distSq < tolSq * 1.5) {
+      // 2. Second pass: semi-transparency for edges
+      const ratio = (distSq - tolSq) / (tolSq * 0.5);
+      data[i + 3] = Math.floor(255 * ratio);
+    }
+  }
+
+  // 3. Simple edge refinement (denoising small isolated pixels)
+  // (Optional: can add basic erosion/dilation if needed)
+
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
 
 // 题库
 const QUESTIONS = [
@@ -13,6 +281,9 @@ const QUESTIONS = [
   { q: "\"hello\"用中文是？", a: ["你好", "再见", "谢谢", "对不起"], ans: 0 },
   // 可添加更多题目
 ];
+
+// 当前正在答的题（进入 QUESTION 状态时设置，答题结束清空）
+let currentQuestion = null;
 
 /**
  * 获取随机题目
@@ -27,10 +298,17 @@ function getRandomQuestion() {
  */
 function handleAnswer(answer) {
   if (gameState !== "QUESTION") return;
-  
-  let question = getRandomQuestion();
-  let correct = answer === question.ans;
-  
+
+  // Use the question shown when entering QUESTION state.
+  const question = currentQuestion;
+  if (!question) {
+    gameState = "PLAYING";
+    hideAllModals();
+    return;
+  }
+
+  const correct = answer === question.ans;
+
   if (correct) {
     // 答对，释放技能
     applySkillEffect(qCaster, qTarget);
@@ -40,9 +318,11 @@ function handleAnswer(answer) {
     // 对手获得连击
     if (qTarget) {
       qTarget.skillPoints += SKILL_GAIN_ON_FAIL;
+      if (typeof updateSkillUI === "function") updateSkillUI(qTarget);
     }
   }
-  
+
+  currentQuestion = null;
   gameState = "PLAYING";
   hideAllModals();
 }
@@ -53,15 +333,15 @@ function handleAnswer(answer) {
  */
 function triggerQuestionMode(caster) {
   if (gameState !== "PLAYING") return;
-  
+
   qCaster = caster;
   qTarget = caster === player1 ? player2 : player1;
   gameState = "QUESTION";
   qTimer = Q_MAX_TIME;
-  
+
   // 显示题目
-  let question = getRandomQuestion();
-  showQuestionModal(question, caster.subject ? caster.subject.name : "学科");
+  currentQuestion = getRandomQuestion();
+  showQuestionModal(currentQuestion, caster.subject ? caster.subject.name : "学科");
 }
 
 /**
@@ -123,10 +403,23 @@ function applySkillEffect(caster, target) {
 function gainSkill(player, points) {
   player.skillPoints += points;
   updateSkillUI(player);
-  
+
   if (player.skillPoints >= MAX_SKILL) {
     createFloatingText(player.x, player.y - 40, "SUPER READY!!", "#ffeb3b");
   }
+}
+
+function applyDamage(target, amount) {
+  if (!target || !amount) return;
+
+  // invincible: no damage
+  if (target.buffs && target.buffs.invincible > 0) return;
+
+  target.hp -= amount;
+  if (target.hp < 0) target.hp = 0;
+
+  if (typeof updateHealthUI === "function") updateHealthUI();
+  if (target.hp <= 0 && typeof endGame === "function") endGame();
 }
 
 // ============================================================================
@@ -228,22 +521,14 @@ async function generateWithBigModel(photoBase64, desc, isP1) {
  * @param {HTMLCanvasElement} canvas - 画布
  * @param {number} threshold - 阈值
  */
+// Back-compat alias used by other code paths
 function removeWhiteBackground(canvas, threshold) {
-  threshold = threshold || 200;
-  let ctx = canvas.getContext("2d");
-  let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  let data = imgData.data;
-  
-  for (let i = 0; i < data.length; i += 4) {
-    let r = data[i], g = data[i + 1], b = data[i + 2];
-    // 白色背景检测
-    if (r > threshold && g > threshold && b > threshold) {
-      data[i + 3] = 0; // 透明
-    }
-  }
-  
-  ctx.putImageData(imgData, 0, 0);
-  return canvas;
+  return removeWhiteBackground_v2(canvas, threshold);
+}
+
+// v2 implementation: route to generic color-based remover (white by default)
+function removeWhiteBackground_v2(canvas, threshold = 50) {
+  return removeBackgroundTransparent(canvas, { r: 255, g: 255, b: 255 }, threshold);
 }
 
 /**

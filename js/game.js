@@ -28,6 +28,12 @@ let ctx = null;
 
 // === 按键状态 ===
 const keys = {};
+// Expose a safe key-clear hook for UI modals (let/const not on window by default)
+window.clearKeys = function clearKeys() {
+  for (const k in keys) {
+    if (Object.prototype.hasOwnProperty.call(keys, k)) delete keys[k];
+  }
+};
 
 /**
  * 矩形碰撞检测
@@ -45,6 +51,8 @@ function rectIntersect(r1, r2) {
  * Check combat collision
  */
 function checkCombat() {
+  let didHit = false;
+
   // P1 attack detection
   let p1Hit = player1.getHitbox();
   if (p1Hit && player1.attackTimer > player1.attackDuration - 3) {
@@ -60,10 +68,13 @@ function checkCombat() {
         (player1.buffs.berserk > 0 ? 8 : 0) -
         (player1.buffs.silence > 0 ? 5 : 0);
       player2.hp -= dmg;
+      if (player2.hp < 0) player2.hp = 0;
+
       player1.skillPoints++;
       hitStopFrames = HIT_STOP_FRAMES;
       screenShakeTime = SCREEN_SHAKE_FRAMES;
       player1.attackTimer = 0;
+      didHit = true;
 
       if (player2.hp <= 0) {
         player2.hp = 0;
@@ -89,10 +100,13 @@ function checkCombat() {
         (player2.buffs.berserk > 0 ? 8 : 0) -
         (player2.buffs.silence > 0 ? 5 : 0);
       player1.hp -= dmg;
+      if (player1.hp < 0) player1.hp = 0;
+
       player2.skillPoints++;
       hitStopFrames = HIT_STOP_FRAMES;
       screenShakeTime = SCREEN_SHAKE_FRAMES;
       player2.attackTimer = 0;
+      didHit = true;
 
       if (player1.hp <= 0) {
         player1.hp = 0;
@@ -100,6 +114,14 @@ function checkCombat() {
       }
 
       console.log(`P2 hit P1! Combo: ${player2.skillPoints}`);
+    }
+  }
+
+  if (didHit) {
+    if (typeof updateHealthUI === "function") updateHealthUI();
+    if (typeof updateSkillUI === "function") {
+      updateSkillUI(player1);
+      updateSkillUI(player2);
     }
   }
 }
@@ -113,6 +135,12 @@ function updateGameTimer() {
     lastTime = now;
     if (!isGameOver && gameState === "PLAYING") {
       gameTimer--;
+
+      // Sync UI timer
+      if (typeof timerDisplay !== "undefined" && timerDisplay) {
+        timerDisplay.textContent = String(gameTimer);
+      }
+
       console.log(`Time: ${gameTimer}s`);
 
       if (gameTimer <= 0) {
@@ -126,6 +154,13 @@ function updateGameTimer() {
  * Draw background
  */
 function drawBackground() {
+  // Prefer custom background if UI layer loaded one
+  if (typeof drawCustomBackground === "function" && drawCustomBackground(ctx)) {
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
+    return;
+  }
+
   ctx.fillStyle = "#1a1a2e";
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   ctx.fillStyle = "#111";
@@ -143,6 +178,13 @@ function gameLoop() {
 
   // Hit Stop handling
   if (hitStopFrames > 0) {
+    // Keep the last frame on screen, but add a subtle impact flash.
+    const alpha = 0.18 * (hitStopFrames / HIT_STOP_FRAMES);
+    ctx.save();
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.restore();
+
     hitStopFrames--;
     return;
   }
@@ -169,7 +211,7 @@ function gameLoop() {
     checkCombat();
   }
 
-  // Draw players
+  // Draw players (even when paused/question/gameover, keep last frame visible)
   player1.draw(ctx);
   player2.draw(ctx);
 
@@ -183,6 +225,10 @@ function endGame() {
   isGameOver = true;
   gameState = "GAMEOVER";
   console.log("Game Over!");
+
+  if (typeof showGameOverScreen === "function") {
+    showGameOverScreen();
+  }
 }
 
 /**
@@ -212,7 +258,18 @@ function initializeGame() {
     "english",
   );
 
+  // Expose for debugging / UI integration
+  window.player1 = player1;
+  window.player2 = player2;
+
   console.log("Game initialized!");
+  if (typeof initializeGameUI === "function") initializeGameUI();
+  if (typeof updateHealthUI === "function") updateHealthUI();
+  if (typeof updateSkillUI === "function") {
+    updateSkillUI(player1);
+    updateSkillUI(player2);
+  }
+  // 不在这里自动创建 AI 面板，由用户点击按钮调用 toggleAIGenerationPanel()
 }
 
 /**
@@ -265,7 +322,9 @@ function setPlayerBuff(player, name, frames) {
 }
 
 // Make handleAnswer globally available
-window.handleAnswer = handleAnswer;
+if (typeof handleAnswer === "function") {
+  window.handleAnswer = handleAnswer;
+}
 
 /**
  * Page load
